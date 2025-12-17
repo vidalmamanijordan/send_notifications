@@ -1,27 +1,11 @@
-<template>
-  <div>
-    vidal
-  </div>
-</template>
-
-<script setup>
-// Imports (si los necesitas)
-// import { ref, reactive, computed, onMounted } from 'vue'
-
-// Estado
-// const count = ref(0)
-
-// Métodos
-// const increment = () => {
-//   count.value++
-// }
-
-// Ciclo de vida
-// onMounted(() => {
-//   console.log('Dashboard mounted')
-// })
+<script setup lang="ts">
+import AppLayout from '@/layouts/AppLayout.vue';
+import { Head } from '@inertiajs/vue3';
 </script>
 
-<style scoped>
-/* Estilos del componente */
-</style>
+<template>
+  <Head title="Campus" />
+  <AppLayout>
+    Mantenimiento de Campus
+  </AppLayout>
+</template>
