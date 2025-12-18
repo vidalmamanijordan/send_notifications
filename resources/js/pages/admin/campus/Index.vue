@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
 import { Pencil, Trash2 } from 'lucide-vue-next';
 import { ref } from 'vue';
+
+// ✅ Modal reutilizable
+import CampusModal from '@/components/campus/CampusModal.vue';
 
 interface Campus {
     id: number;
@@ -24,7 +27,11 @@ defineProps<{
     };
 }>();
 
-// Estado para resaltar botones al hacer click
+// Modal
+const showModal = ref(false);
+const selectedCampus = ref<Campus | null>(null);
+
+// Acciones UI
 const activeAction = ref<{
     id: number | null;
     type: 'edit' | 'delete' | null;
@@ -35,6 +42,25 @@ const activeAction = ref<{
 
 const setActive = (id: number, type: 'edit' | 'delete') => {
     activeAction.value = { id, type };
+};
+
+// Crear
+const openCreateModal = () => {
+    selectedCampus.value = null;
+    showModal.value = true;
+};
+
+// Editar
+const openEditModal = (campus: Campus) => {
+    selectedCampus.value = campus;
+    showModal.value = true;
+};
+
+// 🗑️ Eliminar
+const deleteCampus = (campus: Campus) => {
+    if (!confirm(`¿Eliminar el campus "${campus.name}"?`)) return;
+
+    router.delete(route('admin.campus.destroy', campus.id));
 };
 </script>
 
@@ -53,12 +79,12 @@ const setActive = (id: number, type: 'edit' | 'delete') => {
                     Campus
                 </h1>
 
-                <Link
-                    href="/admin/campus/create"
-                    class="inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-700 active:scale-95"
+                <button
+                    @click="openCreateModal"
+                    class="inline-flex cursor-pointer items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-700 active:scale-95"
                 >
                     + Nuevo Campus
-                </Link>
+                </button>
             </div>
 
             <!-- TABLA -->
@@ -71,22 +97,22 @@ const setActive = (id: number, type: 'edit' | 'delete') => {
                     <thead class="bg-gray-50 dark:bg-gray-800">
                         <tr>
                             <th
-                                class="px-6 py-2 text-xs font-semibold text-gray-500 uppercase"
+                                class="px-6 py-2 text-xs font-semibold uppercase"
                             >
                                 #
                             </th>
                             <th
-                                class="px-6 py-2 text-xs font-semibold text-gray-500 uppercase"
+                                class="px-6 py-2 text-xs font-semibold uppercase"
                             >
                                 Nombre
                             </th>
                             <th
-                                class="px-6 py-2 text-xs font-semibold text-gray-500 uppercase"
+                                class="px-6 py-2 text-xs font-semibold uppercase"
                             >
                                 Código
                             </th>
                             <th
-                                class="px-6 py-2 text-right text-xs font-semibold text-gray-500 uppercase"
+                                class="px-6 py-2 text-right text-xs font-semibold uppercase"
                             >
                                 Acciones
                             </th>
@@ -99,36 +125,31 @@ const setActive = (id: number, type: 'edit' | 'delete') => {
                         <tr
                             v-for="(item, index) in campus.data"
                             :key="item.id"
-                            class="group transition-all duration-200 even:bg-gray-50/40 hover:bg-indigo-50/40 dark:even:bg-gray-800/40 dark:hover:bg-indigo-900/20"
+                            class="group transition-all duration-200 even:bg-gray-50/40 hover:bg-indigo-50/40 dark:even:bg-gray-800/40"
                         >
-                            <td class="px-6 py-2 text-sm text-gray-600">
-                                {{ index + 1 }}
-                            </td>
-
-                            <td
-                                class="px-6 py-2 text-sm font-medium text-gray-900 dark:text-gray-100"
-                            >
+                            <td class="px-6 py-2 text-sm">{{ index + 1 }}</td>
+                            <td class="px-6 py-2 text-sm font-medium">
                                 {{ item.name }}
                             </td>
-
-                            <td class="px-6 py-2 text-sm text-gray-600">
+                            <td class="px-6 py-2 text-sm">
                                 {{ item.code ?? '-' }}
                             </td>
 
-                            <!-- ACCIONES -->
                             <td class="px-6 py-2 text-right">
                                 <div class="flex justify-end gap-2">
                                     <!-- EDITAR -->
                                     <button
-                                        @click="setActive(item.id, 'edit')"
-                                        class="relative flex h-9 w-9 items-center justify-center rounded-full transition-all duration-200 focus:outline-none"
+                                        @click="
+                                            setActive(item.id, 'edit');
+                                            openEditModal(item);
+                                        "
+                                        class="relative flex h-9 w-9 cursor-pointer items-center justify-center rounded-full transition-all duration-200"
                                         :class="[
                                             activeAction.id === item.id &&
                                             activeAction.type === 'edit'
-                                                ? 'bg-indigo-600 text-white shadow-lg ring-2 shadow-indigo-500/50 ring-indigo-400'
-                                                : 'text-indigo-600 hover:bg-indigo-600 hover:text-white hover:shadow-md hover:shadow-indigo-400/40',
+                                                ? 'bg-indigo-600 text-white shadow-lg'
+                                                : 'text-indigo-600 hover:bg-indigo-600 hover:text-white',
                                         ]"
-                                        title="Editar"
                                     >
                                         <Pencil
                                             class="h-4 w-4 transition-transform duration-200"
@@ -144,15 +165,17 @@ const setActive = (id: number, type: 'edit' | 'delete') => {
 
                                     <!-- ELIMINAR -->
                                     <button
-                                        @click="setActive(item.id, 'delete')"
-                                        class="relative flex h-9 w-9 items-center justify-center rounded-full transition-all duration-200 focus:outline-none"
+                                        @click="
+                                            setActive(item.id, 'delete');
+                                            deleteCampus(item);
+                                        "
+                                        class="relative flex h-9 w-9 cursor-pointer items-center justify-center rounded-full transition-all duration-200"
                                         :class="[
                                             activeAction.id === item.id &&
                                             activeAction.type === 'delete'
-                                                ? 'bg-red-600 text-white shadow-lg ring-2 shadow-red-500/50 ring-red-400'
-                                                : 'text-red-600 hover:bg-red-600 hover:text-white hover:shadow-md hover:shadow-red-400/40',
+                                                ? 'bg-red-600 text-white shadow-lg'
+                                                : 'text-red-600 hover:bg-red-600 hover:text-white',
                                         ]"
-                                        title="Eliminar"
                                     >
                                         <Trash2
                                             class="h-4 w-4 transition-transform duration-200"
@@ -169,7 +192,6 @@ const setActive = (id: number, type: 'edit' | 'delete') => {
                             </td>
                         </tr>
 
-                        <!-- EMPTY -->
                         <tr v-if="campus.data.length === 0">
                             <td
                                 colspan="4"
@@ -194,7 +216,7 @@ const setActive = (id: number, type: 'edit' | 'delete') => {
                         :class="{
                             'border-indigo-600 bg-indigo-600 text-white':
                                 link.active,
-                            'border-gray-300 text-gray-600 hover:bg-gray-100':
+                            'border-gray-300 hover:bg-gray-100':
                                 !link.active && link.url,
                             'cursor-not-allowed border-gray-200 text-gray-400':
                                 !link.url,
@@ -203,5 +225,12 @@ const setActive = (id: number, type: 'edit' | 'delete') => {
                 </nav>
             </div>
         </div>
+
+        <!-- MODAL CREATE / EDIT -->
+        <CampusModal
+            :show="showModal"
+            :campus="selectedCampus"
+            @close="showModal = false"
+        />
     </AppLayout>
 </template>

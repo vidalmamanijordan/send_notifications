@@ -13,4 +13,4 @@ Route::middleware(['auth', 'verified'])
         });
 
         Route::resource('campus', CampusController::class);
-});
+}); 

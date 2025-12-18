@@ -35,18 +35,38 @@ class CampusController extends Controller
             ->with('success', 'Campus creado correctamente.');
     }
 
-    public function show($id)
+    public function edit(Campus $campus)
     {
-        //
+        return Inertia::render('admin/campus/Edit', [
+            'campus' => $campus,
+        ]);
     }
 
-    public function edit($id)
+    public function update(Request $request, Campus $campus)
     {
-        //
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'code' => [
+                'nullable',
+                'string',
+                'max:50',
+                'unique:campus,code,' . $campus->id,
+            ],
+        ]);
+
+        $campus->update($validated);
+
+        return redirect()
+            ->route('admin.campus.index')
+            ->with('success', 'Campus actualizado correctamente.');
     }
 
-    public function update(Request $request, $id)
+    public function destroy(Campus $campus)
     {
-        //
+        $campus->delete();
+
+        return redirect()
+            ->route('admin.campus.index')
+            ->with('success', 'Campus eliminado correctamente.');
     }
 }
