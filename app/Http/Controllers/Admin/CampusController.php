@@ -12,27 +12,27 @@ class CampusController extends Controller
     public function index()
     {
         return Inertia::render('admin/campus/Index', [
-            'campus' => Campus::orderBy('name')->get(),
+            'campus' => Campus::orderBy('name')->paginate(10),
         ]);
     }
 
-    public function create(Request $request)
+    public function create()
+    {
+        return Inertia::render('admin/campus/Create');
+    }
+
+    public function store(Request $request)
     {
         $validated = $request->validate([
-            'code' => 'required|string|max:10|unique:campus,code',
-            'name' => 'required|string|max:150',
+            'name' => ['required', 'string', 'max:255'],
+            'code' => ['nullable', 'string', 'max:50', 'unique:campus,code'],
         ]);
 
         Campus::create($validated);
 
         return redirect()
             ->route('admin.campus.index')
-            ->with('success', 'Campus creado correctamente');
-    }
-
-    public function store(Request $request)
-    {
-        //
+            ->with('success', 'Campus creado correctamente.');
     }
 
     public function show($id)
