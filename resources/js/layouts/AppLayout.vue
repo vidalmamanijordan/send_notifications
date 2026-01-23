@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/app/AppSidebarLayout.vue';
 import type { BreadcrumbItemType } from '@/types';
+import { useToastr } from '@/composables/useToastr';
+
+useToastr();
 
 interface Props {
     breadcrumbs?: BreadcrumbItemType[];
