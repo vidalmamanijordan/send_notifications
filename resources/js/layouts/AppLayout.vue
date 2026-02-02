@@ -1,9 +1,11 @@
 <script setup lang="ts">
+import { useSwal } from '@/composables/useSwal';
+import { useToastr } from '@/composables/useToastr';
 import AppLayout from '@/layouts/app/AppSidebarLayout.vue';
 import type { BreadcrumbItemType } from '@/types';
-import { useToastr } from '@/composables/useToastr';
 
 useToastr();
+useSwal();
 
 interface Props {
     breadcrumbs?: BreadcrumbItemType[];

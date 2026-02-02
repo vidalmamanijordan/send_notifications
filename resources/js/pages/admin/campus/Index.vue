@@ -3,6 +3,8 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { Pencil, Trash2 } from 'lucide-vue-next';
 import { ref } from 'vue';
+import { useSwal } from '@/composables/useSwal';
+const Swal = useSwal();
 
 // ✅ Modal reutilizable
 import CampusModal from '@/components/campus/CampusModal.vue';
@@ -58,10 +60,24 @@ const openEditModal = (campus: Campus) => {
 
 // 🗑️ Eliminar
 const deleteCampus = (campus: Campus) => {
-    if (!confirm(`¿Eliminar el campus "${campus.name}"?`)) return;
+    Swal.fire({
+        title: '¿Eliminar campus?',
+        text: `El campus "${campus.name}" será eliminado permanentemente`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#dc2626',
+        cancelButtonColor: '#6b7280',
+        reverseButtons: true,
+        focusCancel: true,
+    }).then((result) => {
+        if (result.isConfirmed) {
+            router.delete(route('admin.campus.destroy', campus.id))
+        }
+    })
+}
 
-    router.delete(route('admin.campus.destroy', campus.id));
-};
 </script>
 
 <template>
