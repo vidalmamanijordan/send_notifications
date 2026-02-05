@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import NavFooter from '@/components/NavFooter.vue'
-import NavMain from '@/components/NavMain.vue'
-import NavUser from '@/components/NavUser.vue'
+import NavFooter from '@/components/NavFooter.vue';
+import NavMain from '@/components/NavMain.vue';
+import NavUser from '@/components/NavUser.vue';
 
 import {
     Sidebar,
@@ -11,13 +11,13 @@ import {
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
-} from '@/components/ui/sidebar'
+} from '@/components/ui/sidebar';
 
-import { type NavItem } from '@/types'
-import { Link } from '@inertiajs/vue3'
-import { BookOpen, Folder, LayoutGrid, School } from 'lucide-vue-next'
-import AppLogo from './AppLogo.vue'
-import { route } from 'ziggy-js'
+import { type NavItem } from '@/types';
+import { Link } from '@inertiajs/vue3';
+import { Folder, LayoutGrid, School } from 'lucide-vue-next';
+import { route } from 'ziggy-js';
+import AppLogo from './AppLogo.vue';
 
 /* 🔹 Navegación principal */
 const mainNavItems: NavItem[] = [
@@ -34,9 +34,13 @@ const mainNavItems: NavItem[] = [
                 title: 'Campus',
                 route: 'admin.campus.index',
             },
+            {
+                title: 'Períodos Académicos',
+                route: 'admin.academic-periods.index',
+            },
         ],
     },
-]
+];
 
 /* 🔹 Footer */
 const footerNavItems: NavItem[] = [
@@ -45,7 +49,7 @@ const footerNavItems: NavItem[] = [
         route: 'https://github.com/laravel/vue-starter-kit',
         icon: Folder,
     },
-]
+];
 </script>
 
 <template>

@@ -16,11 +16,6 @@ class CampusController extends Controller
         ]);
     }
 
-    public function create()
-    {
-        return Inertia::render('admin/campus/Create');
-    }
-
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -33,13 +28,6 @@ class CampusController extends Controller
         return redirect()
             ->route('admin.campus.index')
             ->with('success', 'Campus creado correctamente.');
-    }
-
-    public function edit(Campus $campus)
-    {
-        return Inertia::render('admin/campus/Edit', [
-            'campus' => $campus,
-        ]);
     }
 
     public function update(Request $request, Campus $campus)

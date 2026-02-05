@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\AcademicPeriodController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\CampusController;
 
@@ -13,4 +14,8 @@ Route::middleware(['auth', 'verified'])
         });
 
         Route::resource('campus', CampusController::class);
-}); 
+        Route::resource(
+            'academic-periods',
+            AcademicPeriodController::class
+        )->except(['create', 'edit', 'show']);
+    });
