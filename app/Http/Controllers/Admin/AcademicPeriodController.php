@@ -44,7 +44,7 @@ class AcademicPeriodController extends Controller
         if ($academicPeriod->status === 'closed') {
             return redirect()
                 ->route('admin.academic-periods.index')
-                ->withErrors('El periodo académico está cerrado y no puede modificarse.');
+                ->with('warning', 'El periodo académico está cerrado y no puede modificarse.');
         }
 
         $validated = $request->validate([
@@ -68,9 +68,11 @@ class AcademicPeriodController extends Controller
             ->with('success', 'Periodo académico actualizado correctamente.');
     }
 
-    public function destroy(AcademicPeriod $academicPeriod) 
+
+
+    public function destroy(AcademicPeriod $academicPeriod)
     {
-         $academicPeriod->delete();
+        $academicPeriod->delete();
 
         return redirect()
             ->route('admin.academic-periods.index')

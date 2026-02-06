@@ -1,77 +1,76 @@
 <script setup lang="ts">
-import { computed, watch } from 'vue'
-import { useForm } from '@inertiajs/vue3'
+import { useForm } from '@inertiajs/vue3';
+import { computed, watch } from 'vue';
 
-/* 🔹 Props */
 interface Props {
-    show: boolean
-    mode: 'create' | 'edit'
+    show: boolean;
+    mode: 'create' | 'edit';
     academicPeriod?: {
-        id: number
-        name: string
-        start_date: string
-        end_date: string
-        is_active: boolean
-    } | null
+        id: number;
+        code: string;
+        name: string;
+        start_date: string;
+        end_date: string;
+        status: 'active' | 'closed';
+    } | null;
 }
 
-const props = defineProps<Props>()
-const emit = defineEmits(['close'])
+const props = defineProps<Props>();
+const emit = defineEmits(['close']);
 
-/* 🔹 Formulario */
 const form = useForm({
+    code: '',
     name: '',
     start_date: '',
     end_date: '',
-    is_active: true,
-})
+    status: 'active',
+});
 
-/* 🔹 Cargar datos cuando es edición */
 watch(
-    () => props.show,
+    () => props.academicPeriod,
     (value) => {
-        if (value) {
-            if (props.mode === 'edit' && props.academicPeriod) {
-                form.name = props.academicPeriod.name
-                form.start_date = props.academicPeriod.start_date
-                form.end_date = props.academicPeriod.end_date
-                form.is_active = props.academicPeriod.is_active
-            } else {
-                form.reset()
-                form.is_active = true
-            }
+        if (value && props.mode === 'edit') {
+            form.code = value.code;
+            form.name = value.name;
+            form.start_date = value.start_date;
+            form.end_date = value.end_date;
+            form.status = value.status;
         }
-    }
-)
 
-/* 🔹 Título dinámico */
+        if (props.mode === 'create') {
+            form.reset();
+            form.status = 'active';
+        }
+    },
+    { immediate: true },
+);
+
 const modalTitle = computed(() =>
     props.mode === 'create'
         ? 'Nuevo Periodo Académico'
-        : 'Editar Periodo Académico'
-)
+        : 'Editar Periodo Académico',
+);
 
-/* 🔹 Submit */
 const submit = () => {
     if (props.mode === 'create') {
         form.post(route('admin.academic-periods.store'), {
-            onSuccess: () => closeModal(),
-        })
+            onSuccess: closeModal,
+        });
     } else {
         form.put(
-            route('admin.academic-periods.update', props.academicPeriod?.id),
+            route('admin.academic-periods.update', props.academicPeriod!.id),
             {
-                onSuccess: () => closeModal(),
-            }
-        )
+                onSuccess: closeModal,
+            },
+        );
     }
-}
+};
 
-/* 🔹 Cerrar */
 const closeModal = () => {
-    form.reset()
-    emit('close')
-}
+    form.reset();
+    form.clearErrors();
+    emit('close');
+};
 </script>
 
 <template>
@@ -80,10 +79,14 @@ const closeModal = () => {
             v-if="show"
             class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
         >
-            <div class="w-full max-w-md rounded-lg bg-white p-6 shadow-lg dark:bg-gray-900">
+            <div
+                class="w-full max-w-md rounded-lg bg-white p-6 shadow-lg dark:bg-gray-900"
+            >
                 <!-- HEADER -->
                 <div class="mb-4 flex items-center justify-between">
-                    <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100">
+                    <h2
+                        class="text-lg font-semibold text-gray-800 dark:text-gray-100"
+                    >
                         {{ modalTitle }}
                     </h2>
 
@@ -97,62 +100,92 @@ const closeModal = () => {
 
                 <!-- FORM -->
                 <form @submit.prevent="submit" class="space-y-4">
-                    <!-- Nombre -->
+                    <!-- CÓDIGO -->
+                    <div>
+                        <label class="block text-sm font-medium">Código</label>
+                        <input
+                            v-model="form.code"
+                            type="text"
+                            :readonly="props.mode === 'edit'"
+                            class="mt-1 w-full rounded-md border px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                            :class="
+                                props.mode === 'edit'
+                                    ? 'cursor-not-allowed bg-gray-100'
+                                    : ''
+                            "
+                        />
+                        <p
+                            v-if="form.errors.code"
+                            class="mt-1 text-xs text-red-600"
+                        >
+                            {{ form.errors.code }}
+                        </p>
+                    </div>
+
+                    <!-- NOMBRE -->
                     <div>
                         <label class="block text-sm font-medium">Nombre</label>
                         <input
                             v-model="form.name"
                             type="text"
-                            class="mt-1 w-full rounded-md border px-3 py-2 text-sm
-                                   focus:border-indigo-500 focus:ring-indigo-500"
+                            class="mt-1 w-full rounded-md border px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500"
                         />
-                        <p v-if="form.errors.name" class="mt-1 text-xs text-red-600">
+                        <p
+                            v-if="form.errors.name"
+                            class="mt-1 text-xs text-red-600"
+                        >
                             {{ form.errors.name }}
                         </p>
                     </div>
 
-                    <!-- Fecha inicio -->
+                    <!-- FECHAS -->
                     <div>
-                        <label class="block text-sm font-medium">
-                            Fecha inicio
-                        </label>
+                        <label class="block text-sm font-medium"
+                            >Fecha inicio</label
+                        >
                         <input
                             v-model="form.start_date"
                             type="date"
-                            class="mt-1 w-full rounded-md border px-3 py-2 text-sm
-                                   focus:border-indigo-500 focus:ring-indigo-500"
+                            :class="[
+                                'mt-1 w-full rounded-md border px-3 py-2 text-sm focus:ring-indigo-500',
+                                form.errors.start_date
+                                    ? 'border-red-500 focus:border-red-500'
+                                    : 'focus:border-indigo-500',
+                            ]"
                         />
-                        <p v-if="form.errors.start_date" class="mt-1 text-xs text-red-600">
-                            {{ form.errors.start_date }}
-                        </p>
                     </div>
 
-                    <!-- Fecha fin -->
                     <div>
-                        <label class="block text-sm font-medium">
-                            Fecha fin
-                        </label>
+                        <label class="block text-sm font-medium"
+                            >Fecha fin</label
+                        >
                         <input
                             v-model="form.end_date"
                             type="date"
-                            class="mt-1 w-full rounded-md border px-3 py-2 text-sm
-                                   focus:border-indigo-500 focus:ring-indigo-500"
+                            :class="[
+                                'mt-1 w-full rounded-md border px-3 py-2 text-sm focus:ring-indigo-500',
+                                form.errors.end_date
+                                    ? 'border-red-500 focus:border-red-500'
+                                    : 'focus:border-indigo-500',
+                            ]"
                         />
-                        <p v-if="form.errors.end_date" class="mt-1 text-xs text-red-600">
-                            {{ form.errors.end_date }}
-                        </p>
                     </div>
 
-                    <!-- Activo -->
+                    <!-- ESTADO -->
                     <div class="flex items-center gap-2 pt-1">
                         <input
-                            v-model="form.is_active"
                             type="checkbox"
+                            :checked="form.status === 'active'"
+                            @change="
+                                form.status = $event.target.checked
+                                    ? 'active'
+                                    : 'closed'
+                            "
                             class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                         />
-                        <span class="text-sm text-gray-700">
-                            Periodo activo
-                        </span>
+                        <span class="text-sm text-gray-700"
+                            >Periodo activo</span
+                        >
                     </div>
 
                     <!-- ACTIONS -->
@@ -168,11 +201,13 @@ const closeModal = () => {
                         <button
                             type="submit"
                             :disabled="form.processing"
-                            class="rounded-md bg-indigo-600 px-4 py-2 text-sm
-                                   font-medium text-white hover:bg-indigo-700
-                                   disabled:opacity-50"
+                            class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
                         >
-                            {{ props.mode === 'create' ? 'Guardar' : 'Actualizar' }}
+                            {{
+                                props.mode === 'create'
+                                    ? 'Guardar'
+                                    : 'Actualizar'
+                            }}
                         </button>
                     </div>
                 </form>
