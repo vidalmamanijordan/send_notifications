@@ -193,8 +193,9 @@ const deleteAcademicPeriod = (item: AcademicPeriod) => {
                             <!-- ACCIONES -->
                             <td class="px-6 py-2 text-right">
                                 <div class="flex justify-end gap-2">
-                                    <!-- EDITAR -->
+                                    <!-- EDITAR (solo si está ACTIVO) -->
                                     <button
+                                        v-if="item.status === 'active'"
                                         @click="
                                             setActive(item.id, 'edit');
                                             openEditModal(item);

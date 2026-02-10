@@ -19,8 +19,8 @@ class CampusController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'code' => ['nullable', 'string', 'max:50', 'unique:campus,code'],
+            'name' => 'required|string|max:255',
+            'code' => 'nullable|string|max:50|unique:campus,code',
         ]);
 
         Campus::create($validated);
@@ -33,13 +33,8 @@ class CampusController extends Controller
     public function update(Request $request, Campus $campus)
     {
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'code' => [
-                'nullable',
-                'string',
-                'max:50',
-                'unique:campus,code,' . $campus->id,
-            ],
+            'name' => 'required|string|max:255',
+            'code' => 'nullable|string|max:50|unique:campus,code,' . $campus->id,
         ]);
 
         $campus->update($validated);
