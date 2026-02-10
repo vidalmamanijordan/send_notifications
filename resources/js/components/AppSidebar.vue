@@ -15,7 +15,7 @@ import {
 
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/vue3';
-import { Folder, LayoutGrid, School, BookOpen } from 'lucide-vue-next';
+import { BookOpen, Folder, LayoutGrid, School } from 'lucide-vue-next';
 import { route } from 'ziggy-js';
 import AppLogo from './AppLogo.vue';
 
@@ -37,7 +37,11 @@ const mainNavItems: NavItem[] = [
             {
                 title: 'Facultades',
                 route: 'admin.faculties.index',
-            }
+            },
+            {
+                title: 'Carreras profesionales',
+                route: 'admin.programs.index',
+            },
         ],
     },
     {

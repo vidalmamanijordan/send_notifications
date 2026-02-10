@@ -8,25 +8,52 @@ import {
 } from '@/components/ui/sidebar'
 
 import { type NavItem } from '@/types'
-import { Link, usePage } from '@inertiajs/vue3'
-import { ref } from 'vue'
+import { Link } from '@inertiajs/vue3'
+import { ref, watchEffect } from 'vue'
 import { ChevronDown } from 'lucide-vue-next'
 import { route } from 'ziggy-js'
 
-defineProps<{
+/* =========================
+   Props
+========================= */
+const props = defineProps<{
     items: NavItem[]
 }>()
 
-const page = usePage()
-
-/* Control de submenús abiertos */
+/* =========================
+   Control de submenús
+========================= */
 const open = ref<Record<string, boolean>>({})
 
-/* Detectar ruta activa */
+/* =========================
+   Ruta activa directa
+========================= */
 const isActive = (routeName?: string) => {
     if (!routeName) return false
     return route().current(routeName)
 }
+
+/* =========================
+   ¿Algún hijo activo?
+========================= */
+const isAnyChildActive = (children?: NavItem[]) => {
+    if (!children) return false
+
+    return children.some(child =>
+        child.route ? route().current(child.route + '*') : false
+    )
+}
+
+/* =========================
+   Abrir submenú automáticamente
+========================= */
+watchEffect(() => {
+    props.items.forEach(item => {
+        if (item.children) {
+            open.value[item.title] = isAnyChildActive(item.children)
+        }
+    })
+})
 </script>
 
 <template>
@@ -35,10 +62,10 @@ const isActive = (routeName?: string) => {
 
         <SidebarMenu>
             <SidebarMenuItem
-                v-for="item in items"
+                v-for="item in props.items"
                 :key="item.title"
             >
-                <!-- 🔹 ITEM SIMPLE -->
+                <!-- ITEM SIMPLE -->
                 <SidebarMenuButton
                     v-if="!item.children"
                     as-child
@@ -50,10 +77,11 @@ const isActive = (routeName?: string) => {
                     </Link>
                 </SidebarMenuButton>
 
-                <!-- 🔹 ITEM CON SUBMENÚ -->
+                <!-- ITEM CON SUBMENÚ -->
                 <div v-else>
                     <SidebarMenuButton
                         @click="open[item.title] = !open[item.title]"
+                        :is-active="isAnyChildActive(item.children)"
                     >
                         <component :is="item.icon" />
                         <span class="flex-1">{{ item.title }}</span>

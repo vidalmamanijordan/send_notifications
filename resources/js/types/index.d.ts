@@ -1,4 +1,3 @@
-import { InertiaLinkProps } from '@inertiajs/vue3';
 import type { LucideIcon } from 'lucide-vue-next';
 
 export interface Auth {
@@ -15,6 +14,7 @@ export interface NavItem {
     route?: string;
     icon?: LucideIcon;
     isActive?: boolean;
+    children?: NavItem[];
 }
 
 export type AppPageProps<

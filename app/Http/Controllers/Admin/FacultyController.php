@@ -50,7 +50,7 @@ class FacultyController extends Controller
         $faculty->delete();
 
         return redirect()
-        ->route('admin.faculties.index')
-        ->with('success', 'Facultad eliminada correctamente');
+            ->route('admin.faculties.index')
+            ->with('success', 'Facultad eliminada correctamente');
     }
 }
