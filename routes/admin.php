@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\AcademicPeriodController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\CampusController;
+use App\Http\Controllers\Admin\CourseController;
 use App\Http\Controllers\Admin\FacultyController;
 use App\Http\Controllers\Admin\ProgramController;
 
@@ -27,5 +28,10 @@ Route::middleware(['auth', 'verified'])
         Route::resource(
             'programs',
             ProgramController::class
+        )->except(['create', 'edit', 'show']);
+
+        Route::resource(
+            'courses',
+            CourseController::class
         )->except(['create', 'edit', 'show']);
     });

@@ -42,6 +42,10 @@ const mainNavItems: NavItem[] = [
                 title: 'Carreras profesionales',
                 route: 'admin.programs.index',
             },
+            {
+                title: 'Cursos',
+                route: 'admin.courses.index',
+            },
         ],
     },
     {
