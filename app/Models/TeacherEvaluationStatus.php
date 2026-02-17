@@ -15,6 +15,7 @@ class TeacherEvaluationStatus extends Model
         'import_batch_id',
         'excel_upload_id',
         'teacher_id',
+        'course_id',
         'academic_period_id',
         'campus_id',
         'cycle',

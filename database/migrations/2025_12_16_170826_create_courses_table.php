@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('code', 20)->unique();
             $table->string('name', 150);
-            $table->unsignedTinyInteger('credits');
+            $table->unsignedTinyInteger('credits')->nullable();
             $table->timestamps();
             $table->softDeletes();
         });
