@@ -4,6 +4,8 @@ use App\Http\Controllers\Admin\AcademicPeriodController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\CampusController;
 use App\Http\Controllers\Admin\CourseController;
+use App\Http\Controllers\Admin\ExcelUploadController;
+use App\Http\Controllers\Admin\ExpiredEvaluationController;
 use App\Http\Controllers\Admin\FacultyController;
 use App\Http\Controllers\Admin\ProgramController;
 
@@ -34,4 +36,12 @@ Route::middleware(['auth', 'verified'])
             'courses',
             CourseController::class
         )->except(['create', 'edit', 'show']);
+        Route::resource(
+            'excel-uploads',
+            ExcelUploadController::class
+        )->only(['index', 'store', 'destroy']);
+        Route::get(
+            'expired-evaluations',
+            [ExpiredEvaluationController::class, 'index']
+        )->name('expired-evaluations.index');
     });

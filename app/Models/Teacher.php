@@ -10,26 +10,18 @@ class Teacher extends Model
     use SoftDeletes;
 
     protected $fillable = [
-        'national_id',
-        'first_name',
-        'last_name',
+        'dni',
+        'full_name',
         'email',
-        'whatsapp_phone',
         'is_active'
     ];
 
-    public function assignments()
-    {
-        return $this->hasMany(TeacherAssignment::class);
-    }
+    protected $casts = [
+        'is_active' => 'boolean'
+    ];
 
     public function evaluationStatuses()
     {
         return $this->hasMany(TeacherEvaluationStatus::class);
-    }
-
-    public function notifications()
-    {
-        return $this->hasMany(Notification::class);
     }
 }

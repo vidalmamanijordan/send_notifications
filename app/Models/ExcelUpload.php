@@ -12,8 +12,9 @@ class ExcelUpload extends Model
     protected $fillable = [
         'academic_period_id',
         'campus_id',
+        'uploaded_by',
         'file_path',
-        'is_processed'
+        'status'
     ];
 
     public function academicPeriod()
@@ -24,5 +25,15 @@ class ExcelUpload extends Model
     public function campus()
     {
         return $this->belongsTo(Campus::class);
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'uploaded_by');
+    }
+
+    public function importBatch()
+    {
+        return $this->hasOne(ImportBatch::class);
     }
 }

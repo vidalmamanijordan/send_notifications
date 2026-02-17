@@ -15,7 +15,13 @@ import {
 
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/vue3';
-import { BookOpen, Folder, LayoutGrid, School } from 'lucide-vue-next';
+import {
+    BarChart3,
+    BookOpen,
+    Folder,
+    LayoutGrid,
+    School,
+} from 'lucide-vue-next';
 import { route } from 'ziggy-js';
 import AppLogo from './AppLogo.vue';
 
@@ -27,7 +33,7 @@ const mainNavItems: NavItem[] = [
         icon: LayoutGrid,
     },
     {
-        title: 'Mantenimientos',
+        title: 'Configuración Académica',
         icon: School,
         children: [
             {
@@ -35,11 +41,15 @@ const mainNavItems: NavItem[] = [
                 route: 'admin.campus.index',
             },
             {
+                title: 'Periodos académicos',
+                route: 'admin.academic-periods.index',
+            },
+            {
                 title: 'Facultades',
                 route: 'admin.faculties.index',
             },
             {
-                title: 'Carreras profesionales',
+                title: 'Programas   ',
                 route: 'admin.programs.index',
             },
             {
@@ -49,12 +59,22 @@ const mainNavItems: NavItem[] = [
         ],
     },
     {
-        title: 'Gestión Académica',
+        title: 'Gestión de evaluaciones',
         icon: BookOpen,
         children: [
             {
-                title: 'Períodos Académicos',
-                route: 'admin.academic-periods.index',
+                title: 'Importar reporte',
+                route: 'admin.excel-uploads.index',
+            },
+        ],
+    },
+    {
+        title: 'Seguimiento Académico',
+        icon: BarChart3,
+        children: [
+            {
+                title: 'Rubros Vencidos',
+                route: 'admin.expired-evaluations.index',
             },
         ],
     },

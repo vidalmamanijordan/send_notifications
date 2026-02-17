@@ -15,20 +15,16 @@ class TeacherSeeder extends Seeder
     {
         DB::table('teachers')->insert([
             [
-                'national_id' => '12345678',
-                'first_name' => 'Juan',
-                'last_name' => 'Pérez',
+                'dni' => '12345678',
+                'full_name' => 'Juan Pérez',
                 'email' => 'juan.perez@upeu.edu.pe',
-                'whatsapp_phone' => '+51987654321',
-                'is_active' => true
+                'is_active' => true,
             ],
             [
-                'national_id' => '87654321',
-                'first_name' => 'María',
-                'last_name' => 'Gonzales',
+                'dni' => '87654321',
+                'full_name' => 'Maria Gonzales',
                 'email' => 'maria.gonzales@upeu.edu.pe',
-                'whatsapp_phone' => '+51912345678',
-                'is_active' => true
+                'is_active' => true,
             ],
         ]);
     }

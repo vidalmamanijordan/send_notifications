@@ -15,9 +15,11 @@ return new class extends Migration
             $table->id();
             $table->foreignId('academic_period_id')->constrained();
             $table->foreignId('campus_id')->constrained('campus');
+            $table->foreignId('uploaded_by')->constrained('users');
             $table->string('file_path');
-            $table->boolean('is_processed')->default(false);
-            $table->timestamp('uploaded_at')->useCurrent();
+            $table->enum('status', ['pending', 'processing', 'processed', 'failed'])
+                ->default('pending');
+            /* $table->timestamp('uploaded_at')->useCurrent(); */
             $table->timestamps();
             $table->softDeletes();
         });
