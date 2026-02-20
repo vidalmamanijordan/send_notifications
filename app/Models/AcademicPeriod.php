@@ -10,7 +10,11 @@ class AcademicPeriod extends Model
     use SoftDeletes;
 
     protected $fillable = [
-        'code', 'name', 'start_date', 'end_date', 'status'
+        'code',
+        'name',
+        'start_date',
+        'end_date',
+        'status'
     ];
 
     public function teacherAssignments()
@@ -26,5 +30,10 @@ class AcademicPeriod extends Model
     public function notifications()
     {
         return $this->hasMany(Notification::class);
+    }
+
+    public function notificationBatches()
+    {
+        return $this->hasMany(NotificationBatch::class, 'academic_period_id');
     }
 }

@@ -4,15 +4,18 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class NotificationLog extends Model
+class NotificationBatchDetail extends Model
 {
     protected $fillable = [
         'notification_batch_id',
         'teacher_id',
-        'email',
-        'message',
+        'pending_courses_count',
         'status',
-        'error_message',
         'sent_at'
     ];
+
+    public function teacher()
+    {
+        return $this->belongsTo(\App\Models\Teacher::class, 'teacher_id');
+    }
 }

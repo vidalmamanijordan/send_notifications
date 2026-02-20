@@ -21,6 +21,7 @@ import {
     Folder,
     LayoutGrid,
     School,
+    Bell,
 } from 'lucide-vue-next';
 import { route } from 'ziggy-js';
 import AppLogo from './AppLogo.vue';
@@ -75,6 +76,16 @@ const mainNavItems: NavItem[] = [
             {
                 title: 'Rubros Vencidos',
                 route: 'admin.expired-evaluations.index',
+            },
+        ],
+    },
+    {
+        title: 'Notificaciones Académicas',
+        icon: Bell,
+        children: [
+            {
+                title: 'Lotes activos',
+                route: 'admin.notification-batches.index',
             },
         ],
     },

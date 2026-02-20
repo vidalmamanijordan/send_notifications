@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\CourseController;
 use App\Http\Controllers\Admin\ExcelUploadController;
 use App\Http\Controllers\Admin\ExpiredEvaluationController;
 use App\Http\Controllers\Admin\FacultyController;
+use App\Http\Controllers\Admin\NotificationBatchController;
 use App\Http\Controllers\Admin\ProgramController;
 
 Route::middleware(['auth', 'verified'])
@@ -44,4 +45,14 @@ Route::middleware(['auth', 'verified'])
             'expired-evaluations',
             [ExpiredEvaluationController::class, 'index']
         )->name('expired-evaluations.index');
+
+        Route::resource(
+            'notification-batches',
+            NotificationBatchController::class
+        )->only(['index', 'show']);
+
+        Route::post(
+            'notification-batches/build',
+            [NotificationBatchController::class, 'build']
+        )->name('notification-batches.build');
     });

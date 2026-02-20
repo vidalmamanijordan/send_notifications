@@ -13,9 +13,22 @@ return new class extends Migration
     {
         Schema::create('notification_logs', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('notification_id')->constrained();
-            $table->text('api_response')->nullable();
-            $table->timestamp('logged_at')->useCurrent();
+
+            $table->foreignId('notification_batch_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('teacher_id')->constrained()->cascadeOnDelete();
+
+            $table->string('email');
+            $table->text('message');
+
+            $table->enum('status', [
+                'success',
+                'error'
+            ]);
+
+            $table->text('error_message')->nullable();
+
+            $table->timestamp('sent_at');
+
             $table->timestamps();
         });
     }
