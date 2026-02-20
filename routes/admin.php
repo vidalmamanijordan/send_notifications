@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\ExcelUploadController;
 use App\Http\Controllers\Admin\ExpiredEvaluationController;
 use App\Http\Controllers\Admin\FacultyController;
 use App\Http\Controllers\Admin\NotificationBatchController;
+use App\Http\Controllers\Admin\NotificationTemplateController;
 use App\Http\Controllers\Admin\ProgramController;
 
 Route::middleware(['auth', 'verified'])
@@ -55,4 +56,9 @@ Route::middleware(['auth', 'verified'])
             'notification-batches/build',
             [NotificationBatchController::class, 'build']
         )->name('notification-batches.build');
+
+        Route::resource(
+            'notification-templates',
+            NotificationTemplateController::class
+        )->except(['create', 'edit']);
     });

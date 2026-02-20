@@ -17,11 +17,11 @@ import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/vue3';
 import {
     BarChart3,
+    Bell,
     BookOpen,
     Folder,
     LayoutGrid,
     School,
-    Bell,
 } from 'lucide-vue-next';
 import { route } from 'ziggy-js';
 import AppLogo from './AppLogo.vue';
@@ -83,6 +83,10 @@ const mainNavItems: NavItem[] = [
         title: 'Notificaciones Académicas',
         icon: Bell,
         children: [
+            {
+                title: 'Plantillas',
+                route: 'admin.notification-templates.index',
+            },
             {
                 title: 'Lotes activos',
                 route: 'admin.notification-batches.index',

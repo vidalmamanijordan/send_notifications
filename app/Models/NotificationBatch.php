@@ -9,6 +9,7 @@ class NotificationBatch extends Model
     protected $fillable = [
         'academic_period_id',
         'campus_id',
+        'notification_template_id',
         'name',
         'description',
         'execution_date',
@@ -28,5 +29,10 @@ class NotificationBatch extends Model
     public function details()
     {
         return $this->hasMany(NotificationBatchDetail::class);
+    }
+
+    public function notificationTemplate()
+    {
+        return $this->belongsTo(NotificationTemplate::class, 'notification_template_id');
     }
 }
