@@ -52,10 +52,10 @@ Route::middleware(['auth', 'verified'])
             NotificationBatchController::class
         )->only(['index', 'show']);
 
-        Route::post(
-            'notification-batches/build',
-            [NotificationBatchController::class, 'build']
-        )->name('notification-batches.build');
+        Route::patch(
+            'notification-batches/{notificationBatch}/attach-template',
+            [NotificationBatchController::class, 'attachTemplate']
+        )->name('notification-batches.attach-template');
 
         Route::resource(
             'notification-templates',

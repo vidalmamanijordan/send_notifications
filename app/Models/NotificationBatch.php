@@ -7,9 +7,12 @@ use Illuminate\Database\Eloquent\Model;
 class NotificationBatch extends Model
 {
     protected $fillable = [
+        'import_batch_id',
         'academic_period_id',
         'campus_id',
         'notification_template_id',
+        'subject',
+        'body',
         'name',
         'description',
         'execution_date',
@@ -34,5 +37,10 @@ class NotificationBatch extends Model
     public function notificationTemplate()
     {
         return $this->belongsTo(NotificationTemplate::class, 'notification_template_id');
+    }
+
+    public function importBatch()
+    {
+        return $this->belongsTo(ImportBatch::class);
     }
 }

@@ -15,6 +15,6 @@ class NotificationTemplate extends Model
 
     public function notificationBatches()
     {
-        return $this->hasMany(NotificationBatch::class, 'notification_template_id');
+         return $this->hasMany(NotificationBatch::class);
     }
 }

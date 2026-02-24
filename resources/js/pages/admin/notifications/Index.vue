@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import NotificationBatchModal from '@/components/notifications/NotificationBatchModal.vue';
+import AttachTemplateModal from '@/components/notifications/AttachTemplateModal.vue'; // ✅ NUEVO
 import AppLayout from '@/layouts/AppLayout.vue';
-import { Head, useForm } from '@inertiajs/vue3';
+import { Head, router } from '@inertiajs/vue3';
 import axios from 'axios';
-import { Eye } from 'lucide-vue-next';
+import { Eye, Link as LinkIcon } from 'lucide-vue-next';
 import { ref } from 'vue';
 
 /* =========================
@@ -14,14 +15,9 @@ interface NotificationBatch {
     name: string;
     status: string;
     execution_date: string;
-    academic_period?: {
-        id: number;
-        name: string;
-    };
-    campus?: {
-        id: number;
-        name: string;
-    };
+    notification_template_id?: number | null;
+    academic_period?: { id: number; name: string };
+    campus?: { id: number; name: string };
 }
 
 interface PaginationLink {
@@ -50,29 +46,91 @@ const props = defineProps<{
     };
     academicPeriods: AcademicPeriod[];
     campus: Campus[];
+    filters: {
+        academic_period_id?: string;
+        campus_id?: string;
+        status?: string;
+    };
 }>();
 
 /* =========================
-   BUILD BATCH FORM
+   FILTERS
 ========================= */
-const form = useForm({
-    academic_period_id: '',
-    campus_id: '',
+const filters = ref({
+    academic_period_id: props.filters?.academic_period_id ?? '',
+    campus_id: props.filters?.campus_id ?? '',
+    status: props.filters?.status ?? '',
 });
 
-const buildBatch = () => {
-    if (!form.academic_period_id || !form.campus_id) {
-        alert('Debe seleccionar periodo y campus');
-        return;
-    }
+const applyFilters = () => {
+    router.get(route('admin.notification-batches.index'), filters.value, {
+        preserveState: true,
+    });
+};
 
-    form.post(route('admin.notification-batches.build'), {
-        preserveScroll: true,
+const clearFilters = () => {
+    filters.value = {
+        academic_period_id: '',
+        campus_id: '',
+        status: '',
+    };
+
+    router.get(route('admin.notification-batches.index'), {}, {
+        preserveState: true,
     });
 };
 
 /* =========================
-   MODAL LOGIC
+   STATUS TRANSLATION
+========================= */
+const translateStatus = (status: string) => {
+    switch (status) {
+        case 'draft': return 'Borrador';
+        case 'active': return 'Activo';
+        case 'processing': return 'Procesando';
+        case 'completed': return 'Completado';
+        case 'failed': return 'Fallido';
+        default: return status;
+    }
+};
+
+const statusClasses = (status: string) => {
+    switch (status) {
+        case 'draft': return 'bg-yellow-200 text-yellow-800';
+        case 'active': return 'bg-green-200 text-green-800';
+        case 'processing': return 'bg-blue-200 text-blue-800';
+        case 'completed': return 'bg-emerald-200 text-emerald-800';
+        case 'failed': return 'bg-red-200 text-red-800';
+        default: return 'bg-gray-200 text-gray-700';
+    }
+};
+
+/* =========================
+   TEMPLATE COLORS
+========================= */
+const templateClasses = (hasTemplate: boolean) => {
+    return hasTemplate
+        ? 'bg-green-200 text-green-800 font-semibold'
+        : 'bg-gray-200 text-gray-600';
+};
+
+/* =========================
+   DATE FORMAT
+========================= */
+const formatDateTime = (date: string) => {
+    if (!date) return '-';
+
+    return new Date(date).toLocaleString('es-PE', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+    });
+};
+
+/* =========================
+   MODAL LOGIC (VER DETALLE)
 ========================= */
 const showModal = ref(false);
 const selectedBatch = ref<any>(null);
@@ -82,7 +140,6 @@ const openBatch = async (id: number) => {
         const response = await axios.get(
             route('admin.notification-batches.show', id),
         );
-
         selectedBatch.value = response.data;
         showModal.value = true;
     } catch (error) {
@@ -92,7 +149,6 @@ const openBatch = async (id: number) => {
 
 const paginateBatch = async (url: string) => {
     if (!url) return;
-
     try {
         const response = await axios.get(url);
         selectedBatch.value = response.data;
@@ -100,137 +156,172 @@ const paginateBatch = async (url: string) => {
         console.error('Error paginando lote', error);
     }
 };
+
+/* =========================
+   MODAL LOGIC (ENLAZAR PLANTILLA)
+========================= */
+const showAttachModal = ref(false);
+const selectedBatchId = ref<number | null>(null);
+
+const openAttachTemplate = (batchId: number) => {
+    selectedBatchId.value = batchId;
+    showAttachModal.value = true;
+};
 </script>
 
 <template>
     <Head title="Lotes de Notificación" />
 
     <AppLayout>
-        <div class="space-y-6 px-8 py-6">
+        <div class="space-y-6 p-6">
+
             <!-- HEADER -->
-            <div class="flex items-center justify-between border-b pb-4">
-                <h1 class="text-2xl font-semibold">Lotes de Notificación</h1>
+            <div>
+                <h1 class="text-xl font-semibold">Lotes de Notificación</h1>
+                <p class="text-sm text-gray-500">
+                    Gestión de los lotes generados en el sistema.
+                </p>
+            </div>
 
-                <div class="flex items-center gap-2">
-                    <!-- PERIODO -->
-                    <select
-                        v-model="form.academic_period_id"
-                        class="rounded border px-3 py-2 text-sm"
-                    >
-                        <option value="">Periodo</option>
-                        <option
-                            v-for="p in academicPeriods"
-                            :key="p.id"
-                            :value="p.id"
-                        >
-                            {{ p.name }}
-                        </option>
-                    </select>
+            <!-- FILTROS -->
+            <div class="flex flex-wrap items-center gap-3 rounded-lg border bg-gray-50 p-4">
 
-                    <!-- CAMPUS -->
-                    <select
-                        v-model="form.campus_id"
-                        class="rounded border px-3 py-2 text-sm"
-                    >
-                        <option value="">Campus</option>
-                        <option v-for="c in campus" :key="c.id" :value="c.id">
-                            {{ c.name }}
-                        </option>
-                    </select>
+                <select v-model="filters.academic_period_id"
+                    class="rounded border px-3 py-2 text-sm">
+                    <option value="">Periodo académico</option>
+                    <option v-for="p in academicPeriods" :key="p.id" :value="p.id">
+                        {{ p.name }}
+                    </option>
+                </select>
 
-                    <!-- BOTÓN -->
-                    <button
-                        @click="buildBatch"
-                        :disabled="form.processing"
-                        class="rounded bg-indigo-600 px-4 py-2 text-white transition hover:bg-indigo-700"
-                    >
-                        {{
-                            form.processing
-                                ? 'Construyendo...'
-                                : 'Construir Lote'
-                        }}
-                    </button>
-                </div>
+                <select v-model="filters.campus_id"
+                    class="rounded border px-3 py-2 text-sm">
+                    <option value="">Campus</option>
+                    <option v-for="c in campus" :key="c.id" :value="c.id">
+                        {{ c.name }}
+                    </option>
+                </select>
+
+                <select v-model="filters.status"
+                    class="rounded border px-3 py-2 text-sm">
+                    <option value="">Estado</option>
+                    <option value="draft">Borrador</option>
+                    <option value="active">Activo</option>
+                    <option value="processing">Procesando</option>
+                    <option value="completed">Completado</option>
+                    <option value="failed">Fallido</option>
+                </select>
+
+                <button
+                    @click="applyFilters"
+                    class="rounded-lg bg-indigo-600 px-4 py-2 text-sm text-white shadow transition hover:bg-indigo-700">
+                    Filtrar
+                </button>
+
+                <button
+                    @click="clearFilters"
+                    class="rounded-lg bg-gray-400 px-4 py-2 text-sm text-white shadow transition hover:bg-gray-500">
+                    Limpiar
+                </button>
             </div>
 
             <!-- TABLA -->
-            <div class="overflow-hidden rounded-lg border bg-white shadow-sm">
-                <table class="min-w-full divide-y">
-                    <thead class="bg-gray-50">
+            <div class="overflow-x-auto rounded-xl bg-white shadow">
+                <table class="min-w-full text-sm">
+                    <thead class="bg-gray-100">
                         <tr>
-                            <th class="px-4 py-2">#</th>
-                            <th class="px-4 py-2">Nombre</th>
-                            <th class="px-4 py-2">Periodo</th>
-                            <th class="px-4 py-2">Campus</th>
-                            <th class="px-4 py-2">Estado</th>
-                            <th class="px-4 py-2 text-right">Acciones</th>
+                            <th class="p-3 text-left">#</th>
+                            <th class="p-3 text-left">Nombre</th>
+                            <th class="p-3 text-left">Periodo</th>
+                            <th class="p-3 text-left">Campus</th>
+                            <th class="p-3 text-left">Fecha ejecución</th>
+                            <th class="p-3 text-left">Plantilla</th>
+                            <th class="p-3 text-left">Estado</th>
+                            <th class="p-3 text-center">Acciones</th>
                         </tr>
                     </thead>
 
                     <tbody>
-                        <tr
-                            v-for="(item, index) in props.batches?.data ?? []"
+                        <tr v-for="(item, index) in props.batches?.data ?? []"
                             :key="item.id"
-                            class="border-t"
-                        >
-                            <td class="px-4 py-2">
-                                {{ index + 1 }}
+                            class="border-t transition hover:bg-gray-50">
+
+                            <td class="p-3">{{ index + 1 }}</td>
+                            <td class="p-3 font-medium">{{ item.name }}</td>
+                            <td class="p-3">{{ item.academic_period?.name ?? '-' }}</td>
+                            <td class="p-3">{{ item.campus?.name ?? '-' }}</td>
+
+                            <td class="p-3 text-gray-500">
+                                {{ formatDateTime(item.execution_date) }}
                             </td>
 
-                            <td class="px-4 py-2 font-medium">
-                                {{ item.name }}
-                            </td>
-
-                            <td class="px-4 py-2">
-                                {{ item.academic_period?.name ?? '-' }}
-                            </td>
-
-                            <td class="px-4 py-2">
-                                {{ item.campus?.name ?? '-' }}
-                            </td>
-
-                            <td class="px-4 py-2">
+                            <td class="p-3">
                                 <span
-                                    class="rounded-full px-2 py-1 text-xs"
-                                    :class="
-                                        item.status === 'active'
-                                            ? 'bg-green-100 text-green-700'
-                                            : 'bg-gray-100 text-gray-600'
-                                    "
-                                >
-                                    {{ item.status }}
+                                    class="rounded px-2 py-1 text-xs"
+                                    :class="templateClasses(!!item.notification_template_id)">
+                                    {{
+                                        item.notification_template_id
+                                            ? 'Asignada'
+                                            : 'Sin plantilla'
+                                    }}
                                 </span>
                             </td>
 
-                            <td class="px-4 py-2 text-right">
-                                <button
-                                    @click="openBatch(item.id)"
-                                    class="inline-flex h-9 w-9 items-center justify-center rounded-full text-indigo-600 transition hover:bg-indigo-600 hover:text-white"
-                                >
-                                    <Eye class="h-4 w-4" />
-                                </button>
+                            <td class="p-3">
+                                <span
+                                    class="rounded px-2 py-1 text-xs"
+                                    :class="statusClasses(item.status)">
+                                    {{ translateStatus(item.status) }}
+                                </span>
+                            </td>
+
+                            <td class="p-3">
+                                <div class="flex justify-center gap-2">
+
+                                    <!-- VER -->
+                                    <button
+                                        @click="openBatch(item.id)"
+                                        class="flex h-9 w-9 items-center justify-center rounded-full text-indigo-600 transition hover:bg-indigo-600 hover:text-white">
+                                        <Eye class="h-4 w-4" />
+                                    </button>
+
+                                    <!-- ENLAZAR PLANTILLA -->
+                                    <button
+                                        @click="openAttachTemplate(item.id)"
+                                        class="flex h-9 w-9 items-center justify-center rounded-full text-green-600 transition hover:bg-green-600 hover:text-white">
+                                        <LinkIcon class="h-4 w-4" />
+                                    </button>
+
+                                </div>
                             </td>
                         </tr>
 
                         <tr v-if="(props.batches?.data ?? []).length === 0">
-                            <td
-                                colspan="6"
-                                class="py-6 text-center text-gray-400"
-                            >
+                            <td colspan="8"
+                                class="p-6 text-center text-gray-500">
                                 No hay lotes generados
                             </td>
                         </tr>
                     </tbody>
                 </table>
             </div>
+
         </div>
 
-        <!-- MODAL -->
+        <!-- MODAL ORIGINAL -->
         <NotificationBatchModal
             :show="showModal"
             :batch="selectedBatch"
             @close="showModal = false"
             @paginate="paginateBatch"
         />
+
+        <!-- MODAL NUEVO -->
+        <AttachTemplateModal
+            :show="showAttachModal"
+            :batch-id="selectedBatchId"
+            @close="showAttachModal = false"
+        />
+
     </AppLayout>
 </template>

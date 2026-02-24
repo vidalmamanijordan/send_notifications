@@ -7,6 +7,7 @@ use App\Models\Teacher;
 use App\Models\Course;
 use App\Models\TeacherEvaluationStatus;
 use App\Models\ImportBatch;
+use App\Models\NotificationBatch;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -20,6 +21,9 @@ class ExcelProcessorService
 
         try {
 
+            /*
+            🔄 Marcar como procesando
+            */
             $upload->update([
                 'status' => 'processing'
             ]);
@@ -35,14 +39,14 @@ class ExcelProcessorService
             $rows = $sheet->toArray();
 
             /*
-            🔥 DESACTIVAR lote activo anterior
+            🔥 Desactivar lote activo anterior
             */
             ImportBatch::where('academic_period_id', $upload->academic_period_id)
                 ->where('campus_id', $upload->campus_id)
                 ->update(['is_active' => false]);
 
             /*
-            🔥 CREAR nuevo lote activo
+            🔥 Crear nuevo ImportBatch
             */
             $batch = ImportBatch::create([
                 'name'               => 'Carga ' . now()->format('Y-m-d H:i'),
@@ -56,7 +60,7 @@ class ExcelProcessorService
             ]);
 
             /*
-            🔁 PROCESAR FILAS
+            🔁 Procesar filas del Excel
             */
             foreach (array_slice($rows, 1) as $row) {
 
@@ -72,7 +76,7 @@ class ExcelProcessorService
                 $expired     = $row[10] ?? 0;
 
                 /*
-                🔹 TEACHER
+                🔹 Crear o buscar docente
                 */
                 $teacher = Teacher::firstOrCreate(
                     ['dni' => trim($dni)],
@@ -83,7 +87,7 @@ class ExcelProcessorService
                 );
 
                 /*
-                🔹 COURSE (CREA SI NO EXISTE)
+                🔹 Crear o buscar curso
                 */
                 $course = null;
 
@@ -101,7 +105,7 @@ class ExcelProcessorService
                 }
 
                 /*
-                🔹 INSERT STATUS CON RELACIÓN CORRECTA
+                🔹 Insertar estado de evaluación
                 */
                 TeacherEvaluationStatus::create([
                     'import_batch_id'      => $batch->id,
@@ -118,6 +122,43 @@ class ExcelProcessorService
                 ]);
             }
 
+            /*
+            🔥 CREAR NotificationBatch AUTOMÁTICAMENTE
+            */
+
+            // Evitar duplicado (por seguridad extra)
+            if (!NotificationBatch::where('import_batch_id', $batch->id)->exists()) {
+
+                $notificationBatch = NotificationBatch::create([
+                    'import_batch_id'     => $batch->id,
+                    'academic_period_id'  => $batch->academic_period_id,
+                    'campus_id'           => $batch->campus_id,
+                    'name'                => 'Notificación Rubros Vencidos',
+                    'execution_date'      => now(),
+                    'status'              => 'draft',
+                ]);
+
+                /*
+                🔥 Agrupar docentes con rubros vencidos
+                */
+                $teachersWithPending = TeacherEvaluationStatus::where('import_batch_id', $batch->id)
+                    ->where('expired_components', '>', 0)
+                    ->selectRaw('teacher_id, COUNT(DISTINCT course_id) as pending_courses_count')
+                    ->groupBy('teacher_id')
+                    ->get();
+
+                foreach ($teachersWithPending as $teacherData) {
+                    $notificationBatch->details()->create([
+                        'teacher_id' => $teacherData->teacher_id,
+                        'pending_courses_count' => $teacherData->pending_courses_count,
+                        'status' => 'pending',
+                    ]);
+                }
+            }
+
+            /*
+            ✅ Marcar upload como procesado
+            */
             $upload->update([
                 'status' => 'processed'
             ]);

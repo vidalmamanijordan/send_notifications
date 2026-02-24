@@ -42,4 +42,9 @@ class ImportBatch extends Model
     {
         return $query->where('is_active', true);
     }
+
+    public function notificationBatches()
+    {
+        return $this->hasMany(NotificationBatch::class);
+    }
 }
