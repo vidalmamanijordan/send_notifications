@@ -44,14 +44,33 @@ class NotificationBatchController extends Controller
         ]);
     }
 
+    public function getTemplates()
+    {
+        return NotificationTemplate::select('id', 'name')->latest()->get();
+    }
+
     public function attachTemplate(Request $request, NotificationBatch $notificationBatch)
     {
         $request->validate([
             'notification_template_id' => 'required|exists:notification_templates,id'
         ]);
 
+        // 🔒 SOLO permitir si está en draft o active
+        if (!in_array($notificationBatch->status, ['draft', 'active'])) {
+            return
+
+                back()->with(
+                    'error',
+                    'No se puede cambiar la plantilla porque el lote ya fue procesado.'
+                );
+        }
+
+        $template = NotificationTemplate::findOrFail($request->notification_template_id);
+
         $notificationBatch->update([
-            'notification_template_id' => $request->notification_template_id,
+            'notification_template_id' => $template->id,
+            'subject' => $template->subject,
+            'body' => $template->body,
             'status' => 'active'
         ]);
 

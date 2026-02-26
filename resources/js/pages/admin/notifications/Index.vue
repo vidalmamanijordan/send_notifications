@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import NotificationBatchModal from '@/components/notifications/NotificationBatchModal.vue';
 import AttachTemplateModal from '@/components/notifications/AttachTemplateModal.vue'; // ✅ NUEVO
+import NotificationBatchModal from '@/components/notifications/NotificationBatchModal.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, router } from '@inertiajs/vue3';
 import axios from 'axios';
@@ -36,6 +36,11 @@ interface Campus {
     name: string;
 }
 
+interface NotificationTemplate {
+    id: number;
+    name: string;
+}
+
 /* =========================
    PROPS
 ========================= */
@@ -46,6 +51,7 @@ const props = defineProps<{
     };
     academicPeriods: AcademicPeriod[];
     campus: Campus[];
+    templates: NotificationTemplate[];
     filters: {
         academic_period_id?: string;
         campus_id?: string;
@@ -75,9 +81,13 @@ const clearFilters = () => {
         status: '',
     };
 
-    router.get(route('admin.notification-batches.index'), {}, {
-        preserveState: true,
-    });
+    router.get(
+        route('admin.notification-batches.index'),
+        {},
+        {
+            preserveState: true,
+        },
+    );
 };
 
 /* =========================
@@ -85,23 +95,35 @@ const clearFilters = () => {
 ========================= */
 const translateStatus = (status: string) => {
     switch (status) {
-        case 'draft': return 'Borrador';
-        case 'active': return 'Activo';
-        case 'processing': return 'Procesando';
-        case 'completed': return 'Completado';
-        case 'failed': return 'Fallido';
-        default: return status;
+        case 'draft':
+            return 'Borrador';
+        case 'active':
+            return 'Activo';
+        case 'processing':
+            return 'Procesando';
+        case 'completed':
+            return 'Completado';
+        case 'failed':
+            return 'Fallido';
+        default:
+            return status;
     }
 };
 
 const statusClasses = (status: string) => {
     switch (status) {
-        case 'draft': return 'bg-yellow-200 text-yellow-800';
-        case 'active': return 'bg-green-200 text-green-800';
-        case 'processing': return 'bg-blue-200 text-blue-800';
-        case 'completed': return 'bg-emerald-200 text-emerald-800';
-        case 'failed': return 'bg-red-200 text-red-800';
-        default: return 'bg-gray-200 text-gray-700';
+        case 'draft':
+            return 'bg-yellow-200 text-yellow-800';
+        case 'active':
+            return 'bg-green-200 text-green-800';
+        case 'processing':
+            return 'bg-blue-200 text-blue-800';
+        case 'completed':
+            return 'bg-emerald-200 text-emerald-800';
+        case 'failed':
+            return 'bg-red-200 text-red-800';
+        default:
+            return 'bg-gray-200 text-gray-700';
     }
 };
 
@@ -174,7 +196,6 @@ const openAttachTemplate = (batchId: number) => {
 
     <AppLayout>
         <div class="space-y-6 p-6">
-
             <!-- HEADER -->
             <div>
                 <h1 class="text-xl font-semibold">Lotes de Notificación</h1>
@@ -184,26 +205,37 @@ const openAttachTemplate = (batchId: number) => {
             </div>
 
             <!-- FILTROS -->
-            <div class="flex flex-wrap items-center gap-3 rounded-lg border bg-gray-50 p-4">
-
-                <select v-model="filters.academic_period_id"
-                    class="rounded border px-3 py-2 text-sm">
+            <div
+                class="flex flex-wrap items-center gap-3 rounded-lg border bg-gray-50 p-4"
+            >
+                <select
+                    v-model="filters.academic_period_id"
+                    class="rounded border px-3 py-2 text-sm"
+                >
                     <option value="">Periodo académico</option>
-                    <option v-for="p in academicPeriods" :key="p.id" :value="p.id">
+                    <option
+                        v-for="p in academicPeriods"
+                        :key="p.id"
+                        :value="p.id"
+                    >
                         {{ p.name }}
                     </option>
                 </select>
 
-                <select v-model="filters.campus_id"
-                    class="rounded border px-3 py-2 text-sm">
+                <select
+                    v-model="filters.campus_id"
+                    class="rounded border px-3 py-2 text-sm"
+                >
                     <option value="">Campus</option>
                     <option v-for="c in campus" :key="c.id" :value="c.id">
                         {{ c.name }}
                     </option>
                 </select>
 
-                <select v-model="filters.status"
-                    class="rounded border px-3 py-2 text-sm">
+                <select
+                    v-model="filters.status"
+                    class="rounded border px-3 py-2 text-sm"
+                >
                     <option value="">Estado</option>
                     <option value="draft">Borrador</option>
                     <option value="active">Activo</option>
@@ -214,13 +246,15 @@ const openAttachTemplate = (batchId: number) => {
 
                 <button
                     @click="applyFilters"
-                    class="rounded-lg bg-indigo-600 px-4 py-2 text-sm text-white shadow transition hover:bg-indigo-700">
+                    class="rounded-lg bg-indigo-600 px-4 py-2 text-sm text-white shadow transition hover:bg-indigo-700"
+                >
                     Filtrar
                 </button>
 
                 <button
                     @click="clearFilters"
-                    class="rounded-lg bg-gray-400 px-4 py-2 text-sm text-white shadow transition hover:bg-gray-500">
+                    class="rounded-lg bg-gray-400 px-4 py-2 text-sm text-white shadow transition hover:bg-gray-500"
+                >
                     Limpiar
                 </button>
             </div>
@@ -242,13 +276,16 @@ const openAttachTemplate = (batchId: number) => {
                     </thead>
 
                     <tbody>
-                        <tr v-for="(item, index) in props.batches?.data ?? []"
+                        <tr
+                            v-for="(item, index) in props.batches?.data ?? []"
                             :key="item.id"
-                            class="border-t transition hover:bg-gray-50">
-
+                            class="border-t transition hover:bg-gray-50"
+                        >
                             <td class="p-3">{{ index + 1 }}</td>
                             <td class="p-3 font-medium">{{ item.name }}</td>
-                            <td class="p-3">{{ item.academic_period?.name ?? '-' }}</td>
+                            <td class="p-3">
+                                {{ item.academic_period?.name ?? '-' }}
+                            </td>
                             <td class="p-3">{{ item.campus?.name ?? '-' }}</td>
 
                             <td class="p-3 text-gray-500">
@@ -258,7 +295,12 @@ const openAttachTemplate = (batchId: number) => {
                             <td class="p-3">
                                 <span
                                     class="rounded px-2 py-1 text-xs"
-                                    :class="templateClasses(!!item.notification_template_id)">
+                                    :class="
+                                        templateClasses(
+                                            !!item.notification_template_id,
+                                        )
+                                    "
+                                >
                                     {{
                                         item.notification_template_id
                                             ? 'Asignada'
@@ -270,42 +312,44 @@ const openAttachTemplate = (batchId: number) => {
                             <td class="p-3">
                                 <span
                                     class="rounded px-2 py-1 text-xs"
-                                    :class="statusClasses(item.status)">
+                                    :class="statusClasses(item.status)"
+                                >
                                     {{ translateStatus(item.status) }}
                                 </span>
                             </td>
 
                             <td class="p-3">
                                 <div class="flex justify-center gap-2">
-
                                     <!-- VER -->
                                     <button
                                         @click="openBatch(item.id)"
-                                        class="flex h-9 w-9 items-center justify-center rounded-full text-indigo-600 transition hover:bg-indigo-600 hover:text-white">
+                                        class="flex h-9 w-9 items-center justify-center rounded-full text-indigo-600 transition hover:bg-indigo-600 hover:text-white"
+                                    >
                                         <Eye class="h-4 w-4" />
                                     </button>
 
                                     <!-- ENLAZAR PLANTILLA -->
                                     <button
                                         @click="openAttachTemplate(item.id)"
-                                        class="flex h-9 w-9 items-center justify-center rounded-full text-green-600 transition hover:bg-green-600 hover:text-white">
+                                        class="flex h-9 w-9 items-center justify-center rounded-full text-green-600 transition hover:bg-green-600 hover:text-white"
+                                    >
                                         <LinkIcon class="h-4 w-4" />
                                     </button>
-
                                 </div>
                             </td>
                         </tr>
 
                         <tr v-if="(props.batches?.data ?? []).length === 0">
-                            <td colspan="8"
-                                class="p-6 text-center text-gray-500">
+                            <td
+                                colspan="8"
+                                class="p-6 text-center text-gray-500"
+                            >
                                 No hay lotes generados
                             </td>
                         </tr>
                     </tbody>
                 </table>
             </div>
-
         </div>
 
         <!-- MODAL ORIGINAL -->
@@ -322,6 +366,5 @@ const openAttachTemplate = (batchId: number) => {
             :batch-id="selectedBatchId"
             @close="showAttachModal = false"
         />
-
     </AppLayout>
 </template>

@@ -57,6 +57,11 @@ Route::middleware(['auth', 'verified'])
             [NotificationBatchController::class, 'attachTemplate']
         )->name('notification-batches.attach-template');
 
+        Route::get(
+            'notification-templates/list',
+            [NotificationBatchController::class, 'getTemplates']
+        )->name('notification-templates.list');
+
         Route::resource(
             'notification-templates',
             NotificationTemplateController::class
