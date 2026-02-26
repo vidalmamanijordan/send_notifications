@@ -185,9 +185,39 @@ const paginateBatch = async (url: string) => {
 const showAttachModal = ref(false);
 const selectedBatchId = ref<number | null>(null);
 
-const openAttachTemplate = (batchId: number) => {
-    selectedBatchId.value = batchId;
+const selectedTemplateId = ref<number | null>(null);
+
+const openAttachTemplate = (batch: NotificationBatch) => {
+    selectedBatchId.value = batch.id;
+    selectedTemplateId.value = batch.notification_template_id ?? null;
     showAttachModal.value = true;
+};
+
+const sending = ref(false);
+
+const sendNotifications = async () => {
+    if (!selectedBatch.value?.id) return;
+
+    try {
+        sending.value = true;
+
+        await router.post(
+            route('admin.notification-batches.send', selectedBatch.value.id),
+            {},
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    showModal.value = false;
+                },
+                onFinish: () => {
+                    sending.value = false;
+                },
+            },
+        );
+    } catch (error) {
+        console.error('Error enviando notificaciones', error);
+        sending.value = false;
+    }
 };
 </script>
 
@@ -330,7 +360,7 @@ const openAttachTemplate = (batchId: number) => {
 
                                     <!-- ENLAZAR PLANTILLA -->
                                     <button
-                                        @click="openAttachTemplate(item.id)"
+                                        @click="openAttachTemplate(item)"
                                         class="flex h-9 w-9 items-center justify-center rounded-full text-green-600 transition hover:bg-green-600 hover:text-white"
                                     >
                                         <LinkIcon class="h-4 w-4" />
@@ -358,12 +388,14 @@ const openAttachTemplate = (batchId: number) => {
             :batch="selectedBatch"
             @close="showModal = false"
             @paginate="paginateBatch"
+            @send="sendNotifications"
         />
 
         <!-- MODAL NUEVO -->
         <AttachTemplateModal
             :show="showAttachModal"
             :batch-id="selectedBatchId"
+            :current-template-id="selectedTemplateId"
             @close="showAttachModal = false"
         />
     </AppLayout>

@@ -3,10 +3,11 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\SendNotificationBatchJob;
 use App\Models\AcademicPeriod;
 use App\Models\Campus;
 use App\Models\NotificationBatch;
-use App\Models\NotificationTemplate; // ✅ NUEVO
+use App\Models\NotificationTemplate;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -71,10 +72,30 @@ class NotificationBatchController extends Controller
             'notification_template_id' => $template->id,
             'subject' => $template->subject,
             'body' => $template->body,
-            'status' => 'active'
+            'status' => NotificationBatch::STATUS_ACTIVE
         ]);
 
         return back()->with('success', 'Plantilla asociada correctamente');
+    }
+
+    public function send(NotificationBatch $notificationBatch)
+    {
+        // 1. Validar que tenga plantilla
+        if (!$notificationBatch->notification_template_id) {
+            return back()->withErrors([
+                'batch' => 'El lote no tiene plantilla asignada.'
+            ]);
+        }
+
+        // 2. Cambiar estado a processing
+        $notificationBatch->update([
+            'status' => NotificationBatch::STATUS_PROCESSING
+        ]);
+
+        // 3. Lanzar Job (lo crearemos en el siguiente paso)
+        SendNotificationBatchJob::dispatch($notificationBatch->id);
+
+        return back()->with('success', 'Envío iniciado.');
     }
 
     public function show(NotificationBatch $notificationBatch)

@@ -11,6 +11,7 @@ interface Template {
 const props = defineProps<{
     show: boolean;
     batchId: number | null;
+    currentTemplateId: number | null;
 }>();
 
 const emit = defineEmits(['close']);
@@ -63,10 +64,13 @@ const refreshTemplates = async () => {
         // detectar cambios
         const changed =
             newTemplates.length !== templates.value.length ||
-            newTemplates.some((t, i) => t.id !== templates.value[i]?.id);
+            newTemplates.some((t, i) => {
+                const old = templates.value[i];
+                return !old || t.id !== old.id || t.name !== old.name;
+            });
 
         if (changed) {
-            templates.value = newTemplates;
+            templates.value = [...newTemplates];
             updated.value = true;
             setTimeout(() => (updated.value = false), 2000);
         }
@@ -86,7 +90,7 @@ watch(
             return;
         }
 
-        selectedTemplate.value = null;
+        selectedTemplate.value = props.currentTemplateId ?? null;
         await loadTemplates();
         startAutoRefresh();
     },

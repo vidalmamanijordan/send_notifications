@@ -6,6 +6,12 @@ use Illuminate\Database\Eloquent\Model;
 
 class NotificationBatch extends Model
 {
+    public const STATUS_DRAFT = 'draft';
+    public const STATUS_ACTIVE = 'active';
+    public const STATUS_PROCESSING = 'processing';
+    public const STATUS_COMPLETED = 'completed';
+    public const STATUS_CANCELLED = 'cancelled';
+
     protected $fillable = [
         'import_batch_id',
         'academic_period_id',

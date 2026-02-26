@@ -36,6 +36,7 @@ interface BatchResponse {
 const props = defineProps<{
     show: boolean;
     batch: BatchResponse | null;
+    sending?: boolean;
 }>();
 
 const emit = defineEmits(['close', 'paginate', 'send']);
@@ -203,10 +204,11 @@ const goToPage = (url: string | null) => {
                         Cerrar
                     </button>
                     <button
-                        class="rounded bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700"
+                        class="rounded bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700 disabled:opacity-50"
+                        :disabled="sending"
                         @click="emit('send')"
                     >
-                        Enviar notificaciones
+                        {{ sending ? 'Enviando...' : 'Enviar notificaciones' }}
                     </button>
                 </div>
             </DialogPanel>
