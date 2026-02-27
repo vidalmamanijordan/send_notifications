@@ -79,8 +79,16 @@ class SendNotificationBatchJob implements ShouldQueue
             }
         }
 
-        $batch->update([
-            'status' => NotificationBatch::STATUS_COMPLETED
-        ]);
+        $allSent = $batch->details()->where('status', '!=', 'sent')->count() === 0;
+
+        if ($allSent) {
+            $batch->update([
+                'status' => NotificationBatch::STATUS_COMPLETED
+            ]);
+        } else {
+            $batch->update([
+                'status' => NotificationBatch::STATUS_ACTIVE
+            ]);
+        }
     }
 }

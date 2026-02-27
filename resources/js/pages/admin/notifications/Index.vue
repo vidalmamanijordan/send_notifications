@@ -5,7 +5,7 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, router } from '@inertiajs/vue3';
 import axios from 'axios';
 import { Eye, Link as LinkIcon } from 'lucide-vue-next';
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 
 /* =========================
    TYPES
@@ -58,6 +58,14 @@ const props = defineProps<{
         status?: string;
     };
 }>();
+
+/* =========================
+   AUTO REFRESH (PROCESSING)
+========================= */
+
+const hasProcessing = () => {
+    return (props.batches?.data ?? []).some((b) => b.status === 'processing');
+};
 
 /* =========================
    FILTERS
@@ -150,6 +158,39 @@ const formatDateTime = (date: string) => {
         minute: '2-digit',
     });
 };
+
+let refreshInterval: any = null;
+
+const startPolling = () => {
+    if (refreshInterval) return;
+
+    refreshInterval = setInterval(() => {
+        router.reload({
+            only: ['batches'],
+            preserveScroll: true,
+            preserveState: true,
+        } as any);
+    }, 3000);
+};
+
+const stopPolling = () => {
+    if (refreshInterval) {
+        clearInterval(refreshInterval);
+        refreshInterval = null;
+    }
+};
+
+watch(
+    () => props.batches?.data,
+    () => {
+        if (hasProcessing()) {
+            startPolling();
+        } else {
+            stopPolling();
+        }
+    },
+    { immediate: true },
+);
 
 /* =========================
    MODAL LOGIC (VER DETALLE)

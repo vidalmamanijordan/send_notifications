@@ -101,15 +101,17 @@ class NotificationBatchController extends Controller
     public function show(NotificationBatch $notificationBatch)
     {
         $statusMap = [
-            'draft'     => 'Borrador',
-            'ready'     => 'Listo para envío',
-            'sending'   => 'Enviando',
-            'sent'      => 'Enviado',
-            'partial'   => 'Enviado parcialmente',
-            'cancelled' => 'Cancelado',
-            'pending'   => 'Pendiente',
-            'notified'  => 'Notificado',
-            'error'     => 'Error',
+            // Batch
+            'draft'       => 'Borrador',
+            'active'      => 'Activo',
+            'processing'  => 'Procesando',
+            'completed'   => 'Completado',
+            'cancelled'   => 'Cancelado',
+
+            // Detail
+            'pending'     => 'Pendiente',
+            'sent'        => 'Enviado',
+            'failed'      => 'Fallido',
         ];
 
         $notificationBatch->load([
@@ -128,6 +130,7 @@ class NotificationBatchController extends Controller
                     'full_name' => optional($detail->teacher)->full_name ?? 'Docente no disponible'
                 ],
                 'pending_courses_count' => $detail->pending_courses_count,
+                'status' => $detail->status,
                 'status_label' => $statusMap[$detail->status] ?? $detail->status,
             ];
         });
@@ -135,6 +138,7 @@ class NotificationBatchController extends Controller
         return response()->json([
             'id' => $notificationBatch->id,
             'name' => $notificationBatch->name,
+            'status' => $notificationBatch->status, // 🔥 ESTE ES EL QUE FALTA
             'status_label' => $statusMap[$notificationBatch->status] ?? $notificationBatch->status,
             'teachers_count' => $notificationBatch->details()->count(),
             'total_pending_courses' => $notificationBatch->details()->sum('pending_courses_count'),
