@@ -35,7 +35,7 @@ class SendNotificationBatchJob implements ShouldQueue
 
         foreach ($batch->details as $detail) {
 
-            if ($detail->status === 'sent') continue;
+            if ($detail->status === 'sent' && $detail->sent_at) continue;
 
             try {
 

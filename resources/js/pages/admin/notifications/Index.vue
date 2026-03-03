@@ -202,6 +202,32 @@ watch(
 const showModal = ref(false);
 const selectedBatch = ref<any>(null);
 
+watch(
+    () => props.batches?.data,
+    async (newBatches) => {
+        if (!selectedBatch.value?.id) return;
+
+        const updated = newBatches?.find(
+            (b) => b.id === selectedBatch.value.id,
+        );
+
+        if (!updated) return;
+
+        // Si sigue procesando solo sincroniza estado
+        if (updated.status === 'processing') {
+            selectedBatch.value.status = updated.status;
+            return;
+        }
+
+        // Si terminó, recarga el batch completo
+        const response = await axios.get(
+            route('admin.notification-batches.show', updated.id),
+        );
+
+        selectedBatch.value = response.data;
+    },
+);
+
 const openBatch = async (id: number) => {
     try {
         const response = await axios.get(

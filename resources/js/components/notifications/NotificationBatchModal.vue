@@ -22,6 +22,7 @@ interface PaginationLink {
 interface BatchResponse {
     id: number;
     name: string;
+    status: string;
     status_label: string;
     teachers_count: number;
     total_pending_courses: number;
@@ -43,14 +44,20 @@ const emit = defineEmits(['close', 'paginate', 'send']);
 
 const getBatchStatusColor = (status: string) => {
     switch (status) {
-        case 'Borrador':
-            return 'bg-gray-100 text-gray-600';
-        case 'Procesado':
-            return 'bg-green-100 text-green-700';
-        case 'Enviado':
-            return 'bg-blue-100 text-blue-700';
+        case 'draft':
+            return 'bg-amber-50 text-amber-700 ring-1 ring-amber-200';
+        case 'active':
+            return 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200';
+        case 'processing':
+            return 'bg-blue-50 text-blue-700 ring-1 ring-blue-200 animate-pulse'; // 🔥 igual que index
+        case 'completed':
+            return 'bg-emerald-100 text-emerald-800 ring-1 ring-emerald-300';
+        case 'completed_with_errors':
+            return 'bg-orange-50 text-orange-700 ring-1 ring-orange-300';
+        case 'failed':
+            return 'bg-rose-50 text-rose-700 ring-1 ring-rose-300';
         default:
-            return 'bg-gray-100 text-gray-600';
+            return 'bg-gray-50 text-gray-700 ring-1 ring-gray-200';
     }
 };
 
@@ -110,9 +117,7 @@ const goToPage = (url: string | null) => {
                         <p class="text-xs text-gray-400">Estado</p>
                         <span
                             class="rounded px-2 py-1 text-sm font-medium"
-                            :class="
-                                getBatchStatusColor(batch?.status_label ?? '')
-                            "
+                            :class="getBatchStatusColor(batch?.status ?? '')"
                         >
                             {{ batch?.status_label ?? '-' }}
                         </span>
