@@ -10,6 +10,7 @@ class NotificationBatch extends Model
     public const STATUS_ACTIVE = 'active';
     public const STATUS_PROCESSING = 'processing';
     public const STATUS_COMPLETED = 'completed';
+    public const STATUS_COMPLETED_WITH_ERRORS = 'completed_with_errors';
     public const STATUS_CANCELLED = 'cancelled';
 
     protected $fillable = [

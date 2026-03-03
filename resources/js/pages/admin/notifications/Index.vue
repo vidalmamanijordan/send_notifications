@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import AttachTemplateModal from '@/components/notifications/AttachTemplateModal.vue'; // ✅ NUEVO
+import AttachTemplateModal from '@/components/notifications/AttachTemplateModal.vue';
 import NotificationBatchModal from '@/components/notifications/NotificationBatchModal.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, router } from '@inertiajs/vue3';
@@ -111,6 +111,8 @@ const translateStatus = (status: string) => {
             return 'Procesando';
         case 'completed':
             return 'Completado';
+        case 'completed_with_errors':
+            return 'Completado con errores';
         case 'failed':
             return 'Fallido';
         default:
@@ -121,17 +123,19 @@ const translateStatus = (status: string) => {
 const statusClasses = (status: string) => {
     switch (status) {
         case 'draft':
-            return 'bg-yellow-200 text-yellow-800';
+            return 'bg-amber-50 text-amber-700 ring-1 ring-amber-200';
         case 'active':
-            return 'bg-green-200 text-green-800';
+            return 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200';
         case 'processing':
-            return 'bg-blue-200 text-blue-800';
+            return 'bg-blue-50 text-blue-700 ring-1 ring-blue-200 animate-pulse';
         case 'completed':
-            return 'bg-emerald-200 text-emerald-800';
+            return 'bg-emerald-100 text-emerald-800 ring-1 ring-emerald-300';
+        case 'completed_with_errors':
+            return 'bg-orange-50 text-orange-700 ring-1 ring-orange-300';
         case 'failed':
-            return 'bg-red-200 text-red-800';
+            return 'bg-rose-50 text-rose-700 ring-1 ring-rose-300';
         default:
-            return 'bg-gray-200 text-gray-700';
+            return 'bg-gray-50 text-gray-700 ring-1 ring-gray-200';
     }
 };
 
@@ -140,8 +144,8 @@ const statusClasses = (status: string) => {
 ========================= */
 const templateClasses = (hasTemplate: boolean) => {
     return hasTemplate
-        ? 'bg-green-200 text-green-800 font-semibold'
-        : 'bg-gray-200 text-gray-600';
+        ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200 font-medium'
+        : 'bg-gray-50 text-gray-500 ring-1 ring-gray-200';
 };
 
 /* =========================
@@ -247,9 +251,19 @@ const sendNotifications = async () => {
             {},
             {
                 preserveScroll: true,
-                onSuccess: () => {
-                    showModal.value = false;
+                preserveState: true,
+
+                onSuccess: async () => {
+                    const response = await axios.get(
+                        route(
+                            'admin.notification-batches.show',
+                            selectedBatch.value.id,
+                        ),
+                    );
+
+                    selectedBatch.value = response.data;
                 },
+
                 onFinish: () => {
                     sending.value = false;
                 },
@@ -312,6 +326,9 @@ const sendNotifications = async () => {
                     <option value="active">Activo</option>
                     <option value="processing">Procesando</option>
                     <option value="completed">Completado</option>
+                    <option value="completed_with_errors">
+                        Completado con errores
+                    </option>
                     <option value="failed">Fallido</option>
                 </select>
 
@@ -365,7 +382,7 @@ const sendNotifications = async () => {
 
                             <td class="p-3">
                                 <span
-                                    class="rounded px-2 py-1 text-xs"
+                                    class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold"
                                     :class="
                                         templateClasses(
                                             !!item.notification_template_id,
@@ -382,7 +399,7 @@ const sendNotifications = async () => {
 
                             <td class="p-3">
                                 <span
-                                    class="rounded px-2 py-1 text-xs"
+                                    class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold"
                                     :class="statusClasses(item.status)"
                                 >
                                     {{ translateStatus(item.status) }}

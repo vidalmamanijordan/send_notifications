@@ -82,8 +82,8 @@ class NotificationBatchController extends Controller
     {
         // 1. Validar que tenga plantilla
         if (!$notificationBatch->notification_template_id) {
-            return back()->withErrors([
-                'batch' => 'El lote no tiene plantilla asignada.'
+            return back()->with([
+                'warning' => 'El lote no tiene plantilla asignada.'
             ]);
         }
 
@@ -106,6 +106,7 @@ class NotificationBatchController extends Controller
             'active'      => 'Activo',
             'processing'  => 'Procesando',
             'completed'   => 'Completado',
+            'completed_with_errors' => 'Completado con errores',
             'cancelled'   => 'Cancelado',
 
             // Detail

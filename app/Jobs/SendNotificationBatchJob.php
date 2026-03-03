@@ -3,7 +3,6 @@
 namespace App\Jobs;
 
 use App\Models\NotificationBatch;
-use App\Models\NotificationBatchDetail;
 use App\Models\TeacherEvaluationStatus;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -79,13 +78,22 @@ class SendNotificationBatchJob implements ShouldQueue
             }
         }
 
-        $allSent = $batch->details()->where('status', '!=', 'sent')->count() === 0;
+        $total = $batch->details()->count();
+        $sent = $batch->details()->where('status', 'sent')->count();
+        $failed = $batch->details()->where('status', 'failed')->count();
 
-        if ($allSent) {
+        if ($sent === $total) {
+
             $batch->update([
                 'status' => NotificationBatch::STATUS_COMPLETED
             ]);
+        } elseif ($failed > 0) {
+
+            $batch->update([
+                'status' => NotificationBatch::STATUS_COMPLETED_WITH_ERRORS
+            ]);
         } else {
+
             $batch->update([
                 'status' => NotificationBatch::STATUS_ACTIVE
             ]);

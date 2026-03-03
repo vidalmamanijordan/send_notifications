@@ -30,6 +30,7 @@ return new class extends Migration
                 'active',
                 'processing',
                 'completed',
+                'completed_with_errors',
                 'cancelled'
             ])->default('draft');
 
