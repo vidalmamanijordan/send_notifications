@@ -7,6 +7,7 @@ use App\Jobs\SendNotificationBatchJob;
 use App\Models\AcademicPeriod;
 use App\Models\Campus;
 use App\Models\NotificationBatch;
+use App\Models\NotificationBatchDetail;
 use App\Models\NotificationTemplate;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -80,22 +81,72 @@ class NotificationBatchController extends Controller
 
     public function send(NotificationBatch $notificationBatch)
     {
-        // 1. Validar que tenga plantilla
         if (!$notificationBatch->notification_template_id) {
             return back()->with([
                 'warning' => 'El lote no tiene plantilla asignada.'
             ]);
         }
 
-        // 2. Cambiar estado a processing
+        // 🔥 Guardar estado anterior
+        $previousStatus = $notificationBatch->status;
+
+        // 🔒 Bloquear si ya está completamente terminado
+        if ($previousStatus === NotificationBatch::STATUS_COMPLETED) {
+            return back()->with([
+                'warning' => 'Este lote ya fue enviado completamente y solo queda como historial.'
+            ]);
+        }
+
+        // Cambiar a processing
         $notificationBatch->update([
             'status' => NotificationBatch::STATUS_PROCESSING
         ]);
 
-        // 3. Lanzar Job (lo crearemos en el siguiente paso)
-        SendNotificationBatchJob::dispatch($notificationBatch->id);
+        // 🔥 Determinar si es reintento masivo
+        $isRetry = $previousStatus === NotificationBatch::STATUS_COMPLETED_WITH_ERRORS;
+
+        SendNotificationBatchJob::dispatch(
+            $notificationBatch->id,
+            $isRetry
+        );
 
         return back()->with('success', 'Envío iniciado.');
+    }
+
+    public function resendDetail(NotificationBatchDetail $detail)
+    {
+        // 🔒 Solo permitir si está fallido
+        if ($detail->status !== 'failed') {
+            return back()->with([
+                'warning' => 'Solo se pueden reenviar notificaciones fallidas.'
+            ]);
+        }
+
+        $batch = NotificationBatch::find($detail->notification_batch_id);
+
+        // 🔒 Si el lote ya está completado definitivamente
+        if ($batch->status === NotificationBatch::STATUS_COMPLETED) {
+            return back()->with([
+                'warning' => 'Este lote ya fue completado y solo queda como historial.'
+            ]);
+        }
+
+        // 🔥 VALIDACIÓN NUEVA (AQUÍ EXACTAMENTE)
+        $detail->load('teacher');
+
+        if (!$detail->teacher || !$detail->teacher->email) {
+            return back()->with([
+                'warning' => 'El docente no tiene correo registrado.'
+            ]);
+        }
+
+        SendNotificationBatchJob::dispatch(
+            $detail->notification_batch_id,
+            false,
+            $detail->id
+        );
+
+        return back()->with('success', 'Reenvío iniciado.');
     }
 
     public function show(NotificationBatch $notificationBatch)
@@ -122,7 +173,8 @@ class NotificationBatchController extends Controller
 
         $details = $notificationBatch->details()
             ->with('teacher')
-            ->paginate(4);
+            ->paginate(4)
+            ->appends(request()->query());
 
         $details->getCollection()->transform(function ($detail) use ($statusMap) {
             return [

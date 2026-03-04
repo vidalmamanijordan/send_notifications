@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Dialog, DialogPanel, DialogTitle } from '@headlessui/vue';
-import { X } from 'lucide-vue-next';
+import { RotateCcw, X } from 'lucide-vue-next';
 
 interface Teacher {
     full_name: string;
@@ -40,16 +40,16 @@ const props = defineProps<{
     sending?: boolean;
 }>();
 
-const emit = defineEmits(['close', 'paginate', 'send']);
+const emit = defineEmits(['close', 'paginate', 'send', 'resend']);
 
-const getBatchStatusColor = (status: string) => {
+const statusClasses = (status: string) => {
     switch (status) {
         case 'draft':
             return 'bg-amber-50 text-amber-700 ring-1 ring-amber-200';
         case 'active':
             return 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200';
         case 'processing':
-            return 'bg-blue-50 text-blue-700 ring-1 ring-blue-200 animate-pulse'; // 🔥 igual que index
+            return 'bg-blue-50 text-blue-700 ring-1 ring-blue-200 animate-pulse';
         case 'completed':
             return 'bg-emerald-100 text-emerald-800 ring-1 ring-emerald-300';
         case 'completed_with_errors':
@@ -117,7 +117,7 @@ const goToPage = (url: string | null) => {
                         <p class="text-xs text-gray-400">Estado</p>
                         <span
                             class="rounded px-2 py-1 text-sm font-medium"
-                            :class="getBatchStatusColor(batch?.status ?? '')"
+                            :class="statusClasses(batch?.status ?? '')"
                         >
                             {{ batch?.status_label ?? '-' }}
                         </span>
@@ -167,14 +167,28 @@ const goToPage = (url: string | null) => {
                                     {{ d.pending_courses_count }}
                                 </td>
                                 <td class="px-2 py-2">
-                                    <span
-                                        class="rounded px-2 py-1 text-xs font-medium"
-                                        :class="
-                                            getDetailStatusColor(d.status_label)
-                                        "
-                                    >
-                                        {{ d.status_label }}
-                                    </span>
+                                    <div class="flex items-center gap-2">
+                                        <span
+                                            class="rounded px-2 py-1 text-xs font-medium"
+                                            :class="
+                                                getDetailStatusColor(
+                                                    d.status_label,
+                                                )
+                                            "
+                                        >
+                                            {{ d.status_label }}
+                                        </span>
+
+                                        <!-- Mostrar botón SOLO si está fallido -->
+                                        <button
+                                            v-if="d.status_label === 'Fallido'"
+                                            class="inline-flex items-center gap-1 text-xs font-medium text-indigo-600 hover:text-indigo-800"
+                                            @click="emit('resend', d.id)"
+                                        >
+                                            <RotateCcw class="h-3.5 w-3.5" />
+                                            Reenviar
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                         </tbody>

@@ -62,6 +62,11 @@ Route::middleware(['auth', 'verified'])
             [NotificationBatchController::class, 'send']
         )->name('notification-batches.send');
 
+        Route::post(
+            'notification-batch-details/{detail}/resend',
+            [NotificationBatchController::class, 'resendDetail']
+        )->name('notification-batch-details.resend');
+
         Route::get(
             'notification-templates/list',
             [NotificationBatchController::class, 'getTemplates']

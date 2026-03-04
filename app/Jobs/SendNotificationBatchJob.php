@@ -20,10 +20,14 @@ class SendNotificationBatchJob implements ShouldQueue
         SerializesModels;
 
     protected $batchId;
+    protected $isRetry;
+    protected $detailId;
 
-    public function __construct($batchId)
+    public function __construct($batchId, $isRetry = false, $detailId = null)
     {
         $this->batchId = $batchId;
+        $this->isRetry = $isRetry;
+        $this->detailId = $detailId;
     }
 
     public function handle()
@@ -33,9 +37,36 @@ class SendNotificationBatchJob implements ShouldQueue
 
         if (!$batch) return;
 
-        foreach ($batch->details as $detail) {
+        // 🔒 Si ya está completado totalmente → no hacer nada
+        if ($batch->status === NotificationBatch::STATUS_COMPLETED) {
+            return;
+        }
 
-            if ($detail->status === 'sent' && $detail->sent_at) continue;
+        // 🎯 Seleccionar qué detalles procesar
+        if ($this->detailId) {
+
+            // Reenvío individual
+            $details = $batch->details()
+                ->where('id', $this->detailId)
+                ->where('status', 'failed')
+                ->get();
+
+        } elseif ($this->isRetry) {
+
+            // Reintento masivo (solo fallidos)
+            $details = $batch->details()
+                ->where('status', 'failed')
+                ->get();
+
+        } else {
+
+            // Primer envío (solo pendientes)
+            $details = $batch->details()
+                ->where('status', 'pending')
+                ->get();
+        }
+
+        foreach ($details as $detail) {
 
             try {
 
@@ -45,7 +76,6 @@ class SendNotificationBatchJob implements ShouldQueue
                     throw new \Exception('Correo no disponible');
                 }
 
-                // Cursos vencidos
                 $courses = TeacherEvaluationStatus::where('teacher_id', $teacher->id)
                     ->where('import_batch_id', $batch->import_batch_id)
                     ->where('expired_components', '>', 0)
@@ -70,6 +100,7 @@ class SendNotificationBatchJob implements ShouldQueue
                     'status' => 'sent',
                     'sent_at' => Carbon::now()
                 ]);
+
             } catch (\Throwable $e) {
 
                 $detail->update([
@@ -78,6 +109,7 @@ class SendNotificationBatchJob implements ShouldQueue
             }
         }
 
+        // 🔄 Recalcular estado del batch
         $total = $batch->details()->count();
         $sent = $batch->details()->where('status', 'sent')->count();
         $failed = $batch->details()->where('status', 'failed')->count();
@@ -87,11 +119,13 @@ class SendNotificationBatchJob implements ShouldQueue
             $batch->update([
                 'status' => NotificationBatch::STATUS_COMPLETED
             ]);
+
         } elseif ($failed > 0) {
 
             $batch->update([
                 'status' => NotificationBatch::STATUS_COMPLETED_WITH_ERRORS
             ]);
+
         } else {
 
             $batch->update([

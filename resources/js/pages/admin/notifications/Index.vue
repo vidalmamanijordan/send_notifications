@@ -201,6 +201,7 @@ watch(
 ========================= */
 const showModal = ref(false);
 const selectedBatch = ref<any>(null);
+const currentBatchPage = ref(1);
 
 watch(
     () => props.batches?.data,
@@ -220,9 +221,15 @@ watch(
         }
 
         // Si terminó, recarga el batch completo
+        // Si terminó, recarga el batch completo respetando página actual
         const response = await axios.get(
             route('admin.notification-batches.show', updated.id),
+            {
+                params: { page: currentBatchPage.value },
+            },
         );
+
+        selectedBatch.value = response.data;
 
         selectedBatch.value = response.data;
     },
@@ -242,7 +249,11 @@ const openBatch = async (id: number) => {
 
 const paginateBatch = async (url: string) => {
     if (!url) return;
+
     try {
+        const page = new URL(url).searchParams.get('page');
+        currentBatchPage.value = page ? Number(page) : 1;
+
         const response = await axios.get(url);
         selectedBatch.value = response.data;
     } catch (error) {
@@ -278,13 +289,30 @@ const sendNotifications = async () => {
             {
                 preserveScroll: true,
                 preserveState: true,
+                replace: true, // 👈 evita que cambie historial
 
                 onSuccess: async () => {
+                    // 👇 Recargar SOLO batches respetando filtros y página actual
+                    router.get(
+                        route('admin.notification-batches.index'),
+                        filters.value,
+                        {
+                            only: ['batches'],
+                            preserveScroll: true,
+                            preserveState: true,
+                            replace: true,
+                        },
+                    );
+
+                    // 👇 También refresca el modal
                     const response = await axios.get(
                         route(
                             'admin.notification-batches.show',
                             selectedBatch.value.id,
                         ),
+                        {
+                            params: { page: currentBatchPage.value },
+                        },
                     );
 
                     selectedBatch.value = response.data;
@@ -298,6 +326,38 @@ const sendNotifications = async () => {
     } catch (error) {
         console.error('Error enviando notificaciones', error);
         sending.value = false;
+    }
+};
+
+const resendNotification = async (detailId: number) => {
+    if (!selectedBatch.value?.id) return;
+
+    try {
+        await router.post(
+            route('admin.notification-batch-details.resend', detailId),
+            {},
+            {
+                preserveScroll: true,
+                preserveState: true,
+                replace: true, // 👈 evita el micro cambio de historial
+
+                onSuccess: async () => {
+                    const response = await axios.get(
+                        route(
+                            'admin.notification-batches.show',
+                            selectedBatch.value.id,
+                        ),
+                        {
+                            params: { page: currentBatchPage.value },
+                        },
+                    );
+
+                    selectedBatch.value = response.data;
+                },
+            },
+        );
+    } catch (error) {
+        console.error('Error reenviando notificación', error);
     }
 };
 </script>
@@ -473,6 +533,7 @@ const sendNotifications = async () => {
             @close="showModal = false"
             @paginate="paginateBatch"
             @send="sendNotifications"
+            @resend="resendNotification"
         />
 
         <!-- MODAL NUEVO -->
