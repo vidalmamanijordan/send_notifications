@@ -84,6 +84,10 @@ const mainNavItems: NavItem[] = [
         icon: Bell,
         children: [
             {
+                title: 'Oficinas',
+                route: 'admin.offices.index',
+            },
+            {
                 title: 'Plantillas',
                 route: 'admin.notification-templates.index',
             },

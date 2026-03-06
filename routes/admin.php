@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\ExpiredEvaluationController;
 use App\Http\Controllers\Admin\FacultyController;
 use App\Http\Controllers\Admin\NotificationBatchController;
 use App\Http\Controllers\Admin\NotificationTemplateController;
+use App\Http\Controllers\Admin\OfficeController;
 use App\Http\Controllers\Admin\ProgramController;
 
 Route::middleware(['auth', 'verified'])
@@ -57,6 +58,11 @@ Route::middleware(['auth', 'verified'])
             [NotificationBatchController::class, 'attachTemplate']
         )->name('notification-batches.attach-template');
 
+        Route::patch(
+            'notification-batches/{notificationBatch}/assign-office',
+            [NotificationBatchController::class, 'assignOffice']
+        )->name('notification-batches.assign-office');
+
         Route::post(
             'notification-batches/{notificationBatch}/send',
             [NotificationBatchController::class, 'send']
@@ -76,4 +82,9 @@ Route::middleware(['auth', 'verified'])
             'notification-templates',
             NotificationTemplateController::class
         )->except(['create', 'edit']);
+
+        Route::resource(
+            'offices',
+            OfficeController::class
+        )->except(['create', 'edit', 'show']);
     });

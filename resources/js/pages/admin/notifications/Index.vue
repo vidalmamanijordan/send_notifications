@@ -4,7 +4,7 @@ import NotificationBatchModal from '@/components/notifications/NotificationBatch
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, router } from '@inertiajs/vue3';
 import axios from 'axios';
-import { Eye, Link as LinkIcon } from 'lucide-vue-next';
+import { Eye, FileText, Mail } from 'lucide-vue-next';
 import { ref, watch } from 'vue';
 
 /* =========================
@@ -289,10 +289,10 @@ const sendNotifications = async () => {
             {
                 preserveScroll: true,
                 preserveState: true,
-                replace: true, // 👈 evita que cambie historial
+                replace: true, // evita que cambie historial
 
                 onSuccess: async () => {
-                    // 👇 Recargar SOLO batches respetando filtros y página actual
+                    // Recargar SOLO batches respetando filtros y página actual
                     router.get(
                         route('admin.notification-batches.index'),
                         filters.value,
@@ -339,7 +339,7 @@ const resendNotification = async (detailId: number) => {
             {
                 preserveScroll: true,
                 preserveState: true,
-                replace: true, // 👈 evita el micro cambio de historial
+                replace: true, // evita el micro cambio de historial
 
                 onSuccess: async () => {
                     const response = await axios.get(
@@ -494,20 +494,27 @@ const resendNotification = async (detailId: number) => {
 
                             <td class="p-3">
                                 <div class="flex justify-center gap-2">
+                                    <!-- ENLAZAR PLANTILLA -->
+                                    <button
+                                        @click="openAttachTemplate(item)"
+                                        class="flex h-9 w-9 items-center justify-center rounded-full text-fuchsia-600 transition hover:bg-fuchsia-600 hover:text-white"
+                                    >
+                                        <FileText class="h-4 w-4" />
+                                    </button>
+
+                                    <!-- EMAIL -->
+                                    <button
+                                        class="flex h-9 w-9 items-center justify-center rounded-full text-red-600 transition hover:bg-red-600 hover:text-white"
+                                    >
+                                        <Mail class="h-4 w-4" />
+                                    </button>
+
                                     <!-- VER -->
                                     <button
                                         @click="openBatch(item.id)"
                                         class="flex h-9 w-9 items-center justify-center rounded-full text-indigo-600 transition hover:bg-indigo-600 hover:text-white"
                                     >
                                         <Eye class="h-4 w-4" />
-                                    </button>
-
-                                    <!-- ENLAZAR PLANTILLA -->
-                                    <button
-                                        @click="openAttachTemplate(item)"
-                                        class="flex h-9 w-9 items-center justify-center rounded-full text-green-600 transition hover:bg-green-600 hover:text-white"
-                                    >
-                                        <LinkIcon class="h-4 w-4" />
                                     </button>
                                 </div>
                             </td>

@@ -17,6 +17,7 @@ class NotificationBatch extends Model
         'import_batch_id',
         'academic_period_id',
         'campus_id',
+        'office_id',
         'notification_template_id',
         'subject',
         'body',
@@ -49,5 +50,10 @@ class NotificationBatch extends Model
     public function importBatch()
     {
         return $this->belongsTo(ImportBatch::class);
+    }
+
+    public function office()
+    {
+        return $this->belongsTo(Office::class);
     }
 }

@@ -9,7 +9,9 @@ use App\Models\Campus;
 use App\Models\NotificationBatch;
 use App\Models\NotificationBatchDetail;
 use App\Models\NotificationTemplate;
+use App\Models\Office;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
 class NotificationBatchController extends Controller
@@ -41,7 +43,11 @@ class NotificationBatchController extends Controller
             'batches' => $query->latest()->paginate(10)->withQueryString(),
             'academicPeriods' => AcademicPeriod::select('id', 'name')->get(),
             'campus' => Campus::select('id', 'name')->get(),
-            'templates' => NotificationTemplate::select('id', 'name')->get(), // ✅ NUEVO
+            'templates' => NotificationTemplate::select('id', 'name')->get(),
+            'offices' => Office::where('is_active', 1)
+                ->orderBy('level')
+                ->orderBy('name')
+                ->get(['id', 'name', 'code', 'email', 'cc_email', 'level']),
             'filters' => $request->only('academic_period_id', 'campus_id', 'status')
         ]);
     }
@@ -57,7 +63,7 @@ class NotificationBatchController extends Controller
             'notification_template_id' => 'required|exists:notification_templates,id'
         ]);
 
-        // 🔒 SOLO permitir si está en draft o active
+        // SOLO permitir si está en draft o active
         if (!in_array($notificationBatch->status, ['draft', 'active'])) {
             return
 
@@ -79,6 +85,31 @@ class NotificationBatchController extends Controller
         return back()->with('success', 'Plantilla asociada correctamente');
     }
 
+    public function assignOffice(Request $request, NotificationBatch $notificationBatch)
+    {
+        $request->validate([
+            'office_id' => [
+                'required',
+                Rule::exists('offices', 'id')->where('is_active', 1)
+            ],
+        ]);
+
+        // Opcional: impedir cambio si ya está procesado
+        if (in_array($notificationBatch->status, [
+            NotificationBatch::STATUS_PROCESSING,
+            NotificationBatch::STATUS_COMPLETED,
+            NotificationBatch::STATUS_COMPLETED_WITH_ERRORS,
+        ])) {
+            return back()->with('error', 'No se puede cambiar la oficina en este estado.');
+        }
+
+        $notificationBatch->update([
+            'office_id' => $request->office_id,
+        ]);
+
+        return back()->with('success', 'Oficina asignada correctamente.');
+    }
+
     public function send(NotificationBatch $notificationBatch)
     {
         if (!$notificationBatch->notification_template_id) {
@@ -87,10 +118,16 @@ class NotificationBatchController extends Controller
             ]);
         }
 
-        // 🔥 Guardar estado anterior
+        if (!$notificationBatch->office_id) {
+            return back()->with([
+                'warning' => 'El lote no tiene oficina asignada.'
+            ]);
+        }
+
+        // Guardar estado anterior
         $previousStatus = $notificationBatch->status;
 
-        // 🔒 Bloquear si ya está completamente terminado
+        // Bloquear si ya está completamente terminado
         if ($previousStatus === NotificationBatch::STATUS_COMPLETED) {
             return back()->with([
                 'warning' => 'Este lote ya fue enviado completamente y solo queda como historial.'
@@ -102,7 +139,7 @@ class NotificationBatchController extends Controller
             'status' => NotificationBatch::STATUS_PROCESSING
         ]);
 
-        // 🔥 Determinar si es reintento masivo
+        // Determinar si es reintento masivo
         $isRetry = $previousStatus === NotificationBatch::STATUS_COMPLETED_WITH_ERRORS;
 
         SendNotificationBatchJob::dispatch(
@@ -115,7 +152,7 @@ class NotificationBatchController extends Controller
 
     public function resendDetail(NotificationBatchDetail $detail)
     {
-        // 🔒 Solo permitir si está fallido
+        // Solo permitir si está fallido
         if ($detail->status !== 'failed') {
             return back()->with([
                 'warning' => 'Solo se pueden reenviar notificaciones fallidas.'
@@ -124,14 +161,14 @@ class NotificationBatchController extends Controller
 
         $batch = NotificationBatch::find($detail->notification_batch_id);
 
-        // 🔒 Si el lote ya está completado definitivamente
+        // Si el lote ya está completado definitivamente
         if ($batch->status === NotificationBatch::STATUS_COMPLETED) {
             return back()->with([
                 'warning' => 'Este lote ya fue completado y solo queda como historial.'
             ]);
         }
 
-        // 🔥 VALIDACIÓN NUEVA (AQUÍ EXACTAMENTE)
+        // VALIDACIÓN NUEVA (AQUÍ EXACTAMENTE)
         $detail->load('teacher');
 
         if (!$detail->teacher || !$detail->teacher->email) {
@@ -191,7 +228,7 @@ class NotificationBatchController extends Controller
         return response()->json([
             'id' => $notificationBatch->id,
             'name' => $notificationBatch->name,
-            'status' => $notificationBatch->status, // 🔥 ESTE ES EL QUE FALTA
+            'status' => $notificationBatch->status, // ESTE ES EL QUE FALTA
             'status_label' => $statusMap[$notificationBatch->status] ?? $notificationBatch->status,
             'teachers_count' => $notificationBatch->details()->count(),
             'total_pending_courses' => $notificationBatch->details()->sum('pending_courses_count'),
