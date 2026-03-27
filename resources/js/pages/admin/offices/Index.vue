@@ -2,7 +2,7 @@
 import OfficeModal from '@/components/offices/OfficeModal.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, router, useForm } from '@inertiajs/vue3';
-import { Pencil, Plus, Trash2 } from 'lucide-vue-next';
+import { Download, ImageIcon, Pencil, Plus, Trash2, X } from 'lucide-vue-next';
 import { computed, ref } from 'vue';
 
 interface Office {
@@ -46,6 +46,8 @@ const paginationMeta = computed<PaginationMeta | null>(() => {
 
 const showModal = ref(false);
 const editingOffice = ref<Office | null>(null);
+
+const previewSignature = ref<string | null>(null);
 
 const initialForm = () => ({
     name: '',
@@ -156,6 +158,7 @@ const closeModal = () => {
                 <table class="min-w-full text-sm">
                     <thead class="bg-gray-100">
                         <tr>
+                            <th class="p-3 text-left">Firma</th>
                             <th class="p-3 text-left">Nombre</th>
                             <th class="p-3 text-left">Código</th>
                             <th class="p-3 text-left">Correo</th>
@@ -171,6 +174,25 @@ const closeModal = () => {
                             :key="office.id"
                             class="border-t transition hover:bg-gray-50"
                         >
+                            <td class="p-3 text-center">
+                                <div class="flex justify-center">
+                                    <img
+                                        v-if="office.signature"
+                                        :src="`/storage/${office.signature}`"
+                                        alt="Firma"
+                                        @click="
+                                            previewSignature = `/storage/${office.signature}`
+                                        "
+                                        class="h-12 max-w-[120px] cursor-pointer rounded-md border border-gray-200 bg-white object-contain p-1 shadow-sm transition duration-200 hover:scale-150 hover:shadow-lg"
+                                    />
+                                    <span
+                                        v-else
+                                        class="text-xs text-gray-400 italic"
+                                    >
+                                        Sin firma
+                                    </span>
+                                </div>
+                            </td>
                             <td class="p-3 font-medium">{{ office.name }}</td>
                             <td class="p-3 text-gray-500">{{ office.code }}</td>
                             <td class="p-3">
@@ -286,5 +308,64 @@ const closeModal = () => {
             @close="closeModal"
             @submit="save"
         />
+        <!-- VISOR DE FIRMA -->
+        <div
+            v-if="previewSignature"
+            @click.self="previewSignature = null"
+            class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 transition"
+        >
+            <div
+                class="relative w-[90vw] max-w-3xl rounded-2xl bg-white p-6 shadow-2xl"
+            >
+                <!-- BOTON CERRAR -->
+                <button
+                    @click="previewSignature = null"
+                    class="absolute top-4 right-4 flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 text-gray-600 transition hover:bg-gray-200"
+                >
+                    <X class="h-4 w-4" />
+                </button>
+
+                <!-- TITULO -->
+                <div class="mb-4 text-center">
+                    <h3 class="text-lg font-semibold text-gray-800">
+                        Vista de Firma
+                    </h3>
+                    <p class="text-xs text-gray-500">
+                        Puede descargar la firma en formato PNG o JPG
+                    </p>
+                </div>
+
+                <!-- IMAGEN -->
+                <div class="flex justify-center">
+                    <img
+                        :src="previewSignature"
+                        class="max-h-[60vh] max-w-full rounded-lg border border-gray-200 bg-white object-contain p-2 shadow-sm"
+                    />
+                </div>
+
+                <!-- BOTONES -->
+                <div class="mt-6 flex justify-center gap-3">
+                    <!-- PNG -->
+                    <a
+                        :href="previewSignature"
+                        download="firma.png"
+                        class="flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow transition hover:bg-indigo-700"
+                    >
+                        <Download class="h-4 w-4" />
+                        PNG
+                    </a>
+
+                    <!-- JPG -->
+                    <a
+                        :href="previewSignature"
+                        download="firma.jpg"
+                        class="flex items-center gap-2 rounded-lg bg-gray-700 px-4 py-2 text-sm font-medium text-white shadow transition hover:bg-gray-800"
+                    >
+                        <ImageIcon class="h-4 w-4" />
+                        JPG
+                    </a>
+                </div>
+            </div>
+        </div>
     </AppLayout>
 </template>

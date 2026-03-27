@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import AttachTemplateModal from '@/components/notifications/AttachTemplateModal.vue';
+import EmailPreviewModal from '@/components/notifications/EmailPreviewModal.vue';
 import NotificationBatchModal from '@/components/notifications/NotificationBatchModal.vue';
+import OfficeAssignModal from '@/components/notifications/OfficeAssignModal.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, router } from '@inertiajs/vue3';
 import axios from 'axios';
-import { Eye, FileText, Mail } from 'lucide-vue-next';
+import { Building2, Eye, FileText, Mail, Wand2 } from 'lucide-vue-next';
 import { ref, watch } from 'vue';
 
 /* =========================
@@ -16,6 +18,8 @@ interface NotificationBatch {
     status: string;
     execution_date: string;
     notification_template_id?: number | null;
+    office_id?: number | null;
+    office?: { id: number; name: string };
     academic_period?: { id: number; name: string };
     campus?: { id: number; name: string };
 }
@@ -41,6 +45,13 @@ interface NotificationTemplate {
     name: string;
 }
 
+interface Office {
+    id: number;
+    name: string;
+    email: string;
+    signature?: string;
+}
+
 /* =========================
    PROPS
 ========================= */
@@ -52,6 +63,7 @@ const props = defineProps<{
     academicPeriods: AcademicPeriod[];
     campus: Campus[];
     templates: NotificationTemplate[];
+    offices: Office[];
     filters: {
         academic_period_id?: string;
         campus_id?: string;
@@ -203,6 +215,19 @@ const showModal = ref(false);
 const selectedBatch = ref<any>(null);
 const currentBatchPage = ref(1);
 
+/* =========================
+   MODAL PREVIEW EMAIL
+========================= */
+const showPreviewModal = ref(false);
+const previewSubject = ref('');
+const previewBody = ref('');
+const previewOfficeName = ref('');
+const previewOfficeEmail = ref('');
+const previewOfficeSignature = ref('');
+const previewDate = ref('');
+const previewEmails = ref<string[]>([]);
+const previewTeachers = ref<any[]>([]);
+
 watch(
     () => props.batches?.data,
     async (newBatches) => {
@@ -247,6 +272,29 @@ const openBatch = async (id: number) => {
     }
 };
 
+const previewEmail = async (item: NotificationBatch) => {
+    try {
+        const response = await axios.get(
+            route('admin.notification-batches.preview', item.id),
+        );
+
+        previewSubject.value = response.data.subject;
+        previewBody.value = response.data.body;
+        previewEmails.value = response.data.emails ?? [];
+        previewTeachers.value = response.data.teachers ?? [];
+
+        previewOfficeName.value = item.office?.name ?? '';
+        previewOfficeEmail.value = item.office?.email ?? '';
+        previewOfficeSignature.value = item.office?.signature ?? '';
+
+        previewDate.value = item.execution_date;
+
+        showPreviewModal.value = true;
+    } catch (error) {
+        console.error('Error cargando preview', error);
+    }
+};
+
 const paginateBatch = async (url: string) => {
     if (!url) return;
 
@@ -274,6 +322,32 @@ const openAttachTemplate = (batch: NotificationBatch) => {
     selectedTemplateId.value = batch.notification_template_id ?? null;
     showAttachModal.value = true;
 };
+
+/* =========================
+   MODAL LOGIC (OFICINA)
+========================= */
+
+const showOfficeModal = ref(false);
+const selectedOfficeBatch = ref<number | null>(null);
+const selectedOfficeId = ref<number | null>(null);
+const openOfficeModal = (batch: NotificationBatch) => {
+    selectedOfficeBatch.value = batch.id;
+    selectedOfficeId.value = (batch as any).office_id ?? null;
+
+    router.reload({
+        only: ['offices'],
+        preserveScroll: true,
+        preserveState: true,
+
+        onSuccess: () => {
+            showOfficeModal.value = true;
+        },
+    });
+};
+
+/* =========================
+   SEND LOGIC
+========================= */
 
 const sending = ref(false);
 
@@ -444,6 +518,7 @@ const resendNotification = async (detailId: number) => {
                             <th class="p-3 text-left">Campus</th>
                             <th class="p-3 text-left">Fecha ejecución</th>
                             <th class="p-3 text-left">Plantilla</th>
+                            <th class="p-3 text-left">Oficina</th>
                             <th class="p-3 text-left">Estado</th>
                             <th class="p-3 text-center">Acciones</th>
                         </tr>
@@ -482,6 +557,45 @@ const resendNotification = async (detailId: number) => {
                                     }}
                                 </span>
                             </td>
+                            <!-- OFICINA -->
+                            <td class="p-3">
+                                <div
+                                    v-if="item.office"
+                                    class="flex items-center gap-3"
+                                >
+                                    <!-- ICONO -->
+                                    <div
+                                        class="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-100 text-indigo-600"
+                                    >
+                                        <Building2 class="h-4 w-4" />
+                                    </div>
+
+                                    <!-- INFO -->
+                                    <div class="flex flex-col leading-tight">
+                                        <span
+                                            class="text-sm font-medium text-gray-800"
+                                        >
+                                            {{ item.office.name }}
+                                        </span>
+
+                                        <span class="text-xs text-gray-500">
+                                            {{ item.office.email }}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <!-- SIN OFICINA -->
+                                <div
+                                    v-else
+                                    class="flex items-center gap-2 text-gray-400"
+                                >
+                                    <Building2 class="h-4 w-4" />
+
+                                    <span class="text-xs italic">
+                                        Sin oficina asignada
+                                    </span>
+                                </div>
+                            </td>
 
                             <td class="p-3">
                                 <span
@@ -502,16 +616,25 @@ const resendNotification = async (detailId: number) => {
                                         <FileText class="h-4 w-4" />
                                     </button>
 
-                                    <!-- EMAIL -->
+                                    <!-- ASIGNAR OFICINA -->
                                     <button
+                                        @click="openOfficeModal(item)"
                                         class="flex h-9 w-9 items-center justify-center rounded-full text-red-600 transition hover:bg-red-600 hover:text-white"
                                     >
                                         <Mail class="h-4 w-4" />
                                     </button>
 
-                                    <!-- VER -->
+                                    <!-- ORQUESTADOR -->
                                     <button
                                         @click="openBatch(item.id)"
+                                        class="flex h-9 w-9 items-center justify-center rounded-full text-indigo-600 transition hover:bg-indigo-600 hover:text-white"
+                                    >
+                                        <Wand2 class="h-4 w-4" />
+                                    </button>
+
+                                    <!-- PREVIEW EMAIL -->
+                                    <button
+                                        @click="previewEmail(item)"
                                         class="flex h-9 w-9 items-center justify-center rounded-full text-indigo-600 transition hover:bg-indigo-600 hover:text-white"
                                     >
                                         <Eye class="h-4 w-4" />
@@ -549,6 +672,28 @@ const resendNotification = async (detailId: number) => {
             :batch-id="selectedBatchId"
             :current-template-id="selectedTemplateId"
             @close="showAttachModal = false"
+        />
+
+        <!-- MODAL OFICINA -->
+        <OfficeAssignModal
+            :show="showOfficeModal"
+            :batch-id="selectedOfficeBatch"
+            :offices="props.offices"
+            :current-office-id="selectedOfficeId"
+            @close="showOfficeModal = false"
+        />
+        <!-- MODAL EMAIL PREVIEW -->
+        <EmailPreviewModal
+            :show="showPreviewModal"
+            :subject="previewSubject"
+            :body="previewBody"
+            :emails="previewEmails"
+            :teachers="previewTeachers"
+            :officeName="previewOfficeName"
+            :officeEmail="previewOfficeEmail"
+            :officeSignature="previewOfficeSignature"
+            :sentAt="previewDate"
+            @close="showPreviewModal = false"
         />
     </AppLayout>
 </template>

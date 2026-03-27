@@ -24,7 +24,8 @@ class NotificationBatchController extends Controller
         $query = NotificationBatch::with([
             'academicPeriod',
             'campus',
-            'notificationTemplate'
+            'notificationTemplate',
+            'office'
         ]);
 
         if ($request->academic_period_id) {
@@ -47,7 +48,7 @@ class NotificationBatchController extends Controller
             'offices' => Office::where('is_active', 1)
                 ->orderBy('level')
                 ->orderBy('name')
-                ->get(['id', 'name', 'code', 'email', 'cc_email', 'level']),
+                ->get(['id', 'name', 'code', 'email', 'cc_email', 'level', 'signature']),
             'filters' => $request->only('academic_period_id', 'campus_id', 'status')
         ]);
     }
@@ -87,27 +88,85 @@ class NotificationBatchController extends Controller
 
     public function assignOffice(Request $request, NotificationBatch $notificationBatch)
     {
-        $request->validate([
+        $data = $request->validate([
             'office_id' => [
                 'required',
-                Rule::exists('offices', 'id')->where('is_active', 1)
+                Rule::exists('offices', 'id')->where('is_active', 1),
             ],
         ]);
 
-        // Opcional: impedir cambio si ya está procesado
+        // Evitar cambio si el lote ya fue finalizado
         if (in_array($notificationBatch->status, [
             NotificationBatch::STATUS_PROCESSING,
             NotificationBatch::STATUS_COMPLETED,
             NotificationBatch::STATUS_COMPLETED_WITH_ERRORS,
         ])) {
-            return back()->with('error', 'No se puede cambiar la oficina en este estado.');
+            return back()->with([
+                'error' => 'No se puede cambiar la oficina porque el lote ya está en proceso o finalizado.'
+            ]);
         }
 
         $notificationBatch->update([
-            'office_id' => $request->office_id,
+            'office_id' => $data['office_id'],
         ]);
 
-        return back()->with('success', 'Oficina asignada correctamente.');
+        return back()->with([
+            'success' => 'Oficina asignada correctamente.'
+        ]);
+    }
+
+    public function preview(NotificationBatch $notificationBatch)
+    {
+        $body = $notificationBatch->body ?? '';
+
+        if ($body) {
+            $detail = $notificationBatch->details()
+                ->with('teacher')
+                ->first();
+
+            $teacherName = optional($detail?->teacher)->full_name ?? 'Docente de ejemplo';
+
+            $body = str_replace(
+                ['{docente}', '{cursos}'],
+                [
+                    $teacherName,
+                    "- Curso ejemplo\n- Curso ejemplo 2"
+                ],
+                $body
+            );
+        }
+
+        // Traer solo algunos docentes para preview (evita consultas pesadas)
+        $details = $notificationBatch->details()
+            ->with('teacher')
+            ->limit(10)
+            ->get();
+
+        $teachers = $details->map(function ($detail) {
+            if (!$detail->teacher) {
+                return null;
+            }
+
+            return [
+                'id' => $detail->teacher->id,
+                'name' => $detail->teacher->full_name ?? 'Docente',
+                'email' => $detail->teacher->email,
+            ];
+        })
+            ->filter()
+            ->values();
+
+        $emails = $teachers
+            ->pluck('email')
+            ->filter()
+            ->values();
+
+        return response()->json([
+            'subject' => $notificationBatch->subject ?? '',
+            'body' => $body,
+            'emails' => $emails,
+            'teachers' => $teachers
+        ]);
     }
 
     public function send(NotificationBatch $notificationBatch)

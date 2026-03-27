@@ -53,6 +53,11 @@ Route::middleware(['auth', 'verified'])
             NotificationBatchController::class
         )->only(['index', 'show']);
 
+        Route::get(
+            'notification-batches/{notificationBatch}/preview',
+            [NotificationBatchController::class, 'preview']
+        )->name('notification-batches.preview');
+
         Route::patch(
             'notification-batches/{notificationBatch}/attach-template',
             [NotificationBatchController::class, 'attachTemplate']
