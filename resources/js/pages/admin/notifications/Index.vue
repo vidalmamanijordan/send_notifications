@@ -19,7 +19,7 @@ interface NotificationBatch {
     execution_date: string;
     notification_template_id?: number | null;
     office_id?: number | null;
-    office?: { id: number; name: string };
+    office?: { id: number; name: string; email: string; signature?: string };
     academic_period?: { id: number; name: string };
     campus?: { id: number; name: string };
 }

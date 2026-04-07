@@ -10,6 +10,7 @@ use App\Models\NotificationBatch;
 use App\Models\NotificationBatchDetail;
 use App\Models\NotificationTemplate;
 use App\Models\Office;
+use App\Models\TeacherEvaluationStatus;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -117,39 +118,20 @@ class NotificationBatchController extends Controller
 
     public function preview(NotificationBatch $notificationBatch)
     {
-        $body = $notificationBatch->body ?? '';
-
-        if ($body) {
-            $detail = $notificationBatch->details()
-                ->with('teacher')
-                ->first();
-
-            $teacherName = optional($detail?->teacher)->full_name ?? 'Docente de ejemplo';
-
-            $body = str_replace(
-                ['{docente}', '{cursos}'],
-                [
-                    $teacherName,
-                    "- Curso ejemplo\n- Curso ejemplo 2"
-                ],
-                $body
-            );
-        }
-
         // Traer solo algunos docentes para preview (evita consultas pesadas)
-        $details = $notificationBatch->details()
+        $batchDetails = $notificationBatch->details()
             ->with('teacher')
             ->limit(10)
             ->get();
 
-        $teachers = $details->map(function ($detail) {
+        $teachers = $batchDetails->map(function ($detail) {
             if (!$detail->teacher) {
                 return null;
             }
 
             return [
-                'id' => $detail->teacher->id,
-                'name' => $detail->teacher->full_name ?? 'Docente',
+                'id'    => $detail->teacher->id,
+                'name'  => $detail->teacher->full_name ?? 'Docente',
                 'email' => $detail->teacher->email,
             ];
         })
@@ -161,10 +143,29 @@ class NotificationBatchController extends Controller
             ->filter()
             ->values();
 
+        $firstTeacher = $teachers->first();
+        $body         = $notificationBatch->body ?? '';
+
+        if ($body && $firstTeacher) {
+            $courses = TeacherEvaluationStatus::where('teacher_id', $firstTeacher['id'])
+                ->where('import_batch_id', $notificationBatch->import_batch_id)
+                ->where('expired_components', '>', 0)
+                ->with('course')
+                ->get()
+                ->map(fn($c) => "- {$c->course?->name} (Ciclo: {$c->cycle}, Grupo: {$c->group})")
+                ->implode("\n");
+
+            $body = str_replace(
+                ['{docente}', '{cursos}'],
+                [$firstTeacher['name'], $courses ?: '- (sin cursos)'],
+                $body
+            );
+        }
+
         return response()->json([
             'subject' => $notificationBatch->subject ?? '',
-            'body' => $body,
-            'emails' => $emails,
+            'body'    => $body,
+            'emails'  => $emails,
             'teachers' => $teachers
         ]);
     }
@@ -201,12 +202,13 @@ class NotificationBatchController extends Controller
         // Determinar si es reintento masivo
         $isRetry = $previousStatus === NotificationBatch::STATUS_COMPLETED_WITH_ERRORS;
 
-        SendNotificationBatchJob::dispatch(
+        // Ejecutar sincrónicamente (no requiere worker de colas)
+        SendNotificationBatchJob::dispatchSync(
             $notificationBatch->id,
             $isRetry
         );
 
-        return back()->with('success', 'Envío iniciado.');
+        return back()->with('success', 'Envío completado.');
     }
 
     public function resendDetail(NotificationBatchDetail $detail)
@@ -236,13 +238,13 @@ class NotificationBatchController extends Controller
             ]);
         }
 
-        SendNotificationBatchJob::dispatch(
+        SendNotificationBatchJob::dispatchSync(
             $detail->notification_batch_id,
             false,
             $detail->id
         );
 
-        return back()->with('success', 'Reenvío iniciado.');
+        return back()->with('success', 'Reenvío completado.');
     }
 
     public function show(NotificationBatch $notificationBatch)
@@ -260,44 +262,53 @@ class NotificationBatchController extends Controller
             'pending'     => 'Pendiente',
             'sent'        => 'Enviado',
             'failed'      => 'Fallido',
+            'skipped'     => 'Sin correo',
         ];
 
         $notificationBatch->load([
             'academicPeriod',
-            'campus'
+            'campus',
+            'office',
         ]);
 
         $details = $notificationBatch->details()
-            ->with('teacher')
+            ->with(['teacher' => fn ($q) => $q->withTrashed()])
             ->paginate(4)
             ->appends(request()->query());
 
         $details->getCollection()->transform(function ($detail) use ($statusMap) {
             return [
-                'id' => $detail->id,
-                'teacher' => [
+                'id'                    => $detail->id,
+                'teacher'               => [
                     'full_name' => optional($detail->teacher)->full_name ?? 'Docente no disponible'
                 ],
+                'has_email'             => !empty(optional($detail->teacher)->email),
                 'pending_courses_count' => $detail->pending_courses_count,
-                'status' => $detail->status,
-                'status_label' => $statusMap[$detail->status] ?? $detail->status,
+                'status'                => $detail->status,
+                'status_label'          => $statusMap[$detail->status] ?? $detail->status,
             ];
         });
 
         return response()->json([
-            'id' => $notificationBatch->id,
-            'name' => $notificationBatch->name,
-            'status' => $notificationBatch->status, // ESTE ES EL QUE FALTA
-            'status_label' => $statusMap[$notificationBatch->status] ?? $notificationBatch->status,
-            'teachers_count' => $notificationBatch->details()->count(),
+            'id'                    => $notificationBatch->id,
+            'name'                  => $notificationBatch->name,
+            'status'                => $notificationBatch->status,
+            'status_label'          => $statusMap[$notificationBatch->status] ?? $notificationBatch->status,
+            'teachers_count'        => $notificationBatch->details()->count(),
             'total_pending_courses' => $notificationBatch->details()->sum('pending_courses_count'),
-            'academic_period' => [
-                'name' => optional($notificationBatch->academicPeriod)->name
+            'academic_period'       => [
+                'name' => optional($notificationBatch->academicPeriod)->name,
             ],
-            'campus' => [
-                'name' => optional($notificationBatch->campus)->name
+            'campus'                => [
+                'name' => optional($notificationBatch->campus)->name,
             ],
-            'details' => $details
+            'office'                => $notificationBatch->office ? [
+                'id'        => $notificationBatch->office->id,
+                'name'      => $notificationBatch->office->name,
+                'email'     => $notificationBatch->office->email,
+                'signature' => $notificationBatch->office->signature,
+            ] : null,
+            'details'               => $details,
         ]);
     }
 }

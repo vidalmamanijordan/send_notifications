@@ -10,6 +10,7 @@
         id: number;
         pending_courses_count: number;
         status_label: string;
+        has_email: boolean;
         teacher?: Teacher;
     }
 
@@ -65,10 +66,12 @@
         switch (status) {
             case 'Pendiente':
                 return 'bg-yellow-100 text-yellow-700';
-            case 'Notificado':
+            case 'Enviado':
                 return 'bg-green-100 text-green-700';
-            case 'Error':
+            case 'Fallido':
                 return 'bg-red-100 text-red-700';
+            case 'Sin correo':
+                return 'bg-gray-100 text-gray-500';
             default:
                 return 'bg-gray-100 text-gray-700';
         }
@@ -179,9 +182,18 @@
                                                 {{ d.status_label }}
                                             </span>
 
-                                            <!-- Mostrar botón SOLO si está fallido -->
+                                            <!-- Sin correo registrado -->
+                                            <span
+                                                v-if="!d.has_email"
+                                                class="rounded px-2 py-1 text-xs font-medium bg-red-50 text-red-600 ring-1 ring-red-200"
+                                                title="Este docente no tiene correo registrado"
+                                            >
+                                                Sin correo
+                                            </span>
+
+                                            <!-- Reenviar solo si está fallido Y tiene correo -->
                                             <button
-                                                v-if="d.status_label === 'Fallido'"
+                                                v-if="d.status_label === 'Fallido' && d.has_email"
                                                 class="inline-flex items-center gap-1 text-xs font-medium text-indigo-600 hover:text-indigo-800"
                                                 @click="emit('resend', d.id)"
                                             >

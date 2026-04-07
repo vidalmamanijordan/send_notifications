@@ -76,15 +76,23 @@ class ExcelProcessorService
                 $expired     = $row[10] ?? 0;
 
                 /*
-                🔹 Crear o buscar docente
+                🔹 Crear o buscar docente (incluye soft-deleted para evitar
+                   violación de unique en dni)
                 */
-                $teacher = Teacher::firstOrCreate(
-                    ['dni' => trim($dni)],
-                    [
+                $teacher = Teacher::withTrashed()->where('dni', trim($dni))->first();
+
+                if ($teacher) {
+                    if ($teacher->trashed()) {
+                        $teacher->restore();
+                    }
+                    $teacher->update(['full_name' => trim($teacherName), 'is_active' => true]);
+                } else {
+                    $teacher = Teacher::create([
+                        'dni'       => trim($dni),
                         'full_name' => trim($teacherName),
                         'is_active' => true,
-                    ]
-                );
+                    ]);
+                }
 
                 /*
                 🔹 Crear o buscar curso
