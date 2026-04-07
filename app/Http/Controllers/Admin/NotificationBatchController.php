@@ -22,15 +22,20 @@ class NotificationBatchController extends Controller
      */
     public function index(Request $request)
     {
+        // Periodo: filtro explícito de la URL tiene prioridad, luego sesión global
+        $periodId = $request->get('academic_period_id')
+            ?: (session('selected_period_id')
+                ?: AcademicPeriod::where('status', 'active')->value('id'));
+
         $query = NotificationBatch::with([
             'academicPeriod',
             'campus',
             'notificationTemplate',
-            'office'
+            'office',
         ]);
 
-        if ($request->academic_period_id) {
-            $query->where('academic_period_id', $request->academic_period_id);
+        if ($periodId) {
+            $query->where('academic_period_id', $periodId);
         }
 
         if ($request->campus_id) {
@@ -42,15 +47,19 @@ class NotificationBatchController extends Controller
         }
 
         return Inertia::render('admin/notifications/Index', [
-            'batches' => $query->latest()->paginate(10)->withQueryString(),
+            'batches'         => $query->latest()->paginate(10)->withQueryString(),
             'academicPeriods' => AcademicPeriod::select('id', 'name')->get(),
-            'campus' => Campus::select('id', 'name')->get(),
-            'templates' => NotificationTemplate::select('id', 'name')->get(),
-            'offices' => Office::where('is_active', 1)
+            'campus'          => Campus::select('id', 'name')->get(),
+            'templates'       => NotificationTemplate::select('id', 'name')->get(),
+            'offices'         => Office::where('is_active', 1)
                 ->orderBy('level')
                 ->orderBy('name')
                 ->get(['id', 'name', 'code', 'email', 'cc_email', 'level', 'signature']),
-            'filters' => $request->only('academic_period_id', 'campus_id', 'status')
+            'filters'         => [
+                'academic_period_id' => $periodId ?? '',
+                'campus_id'          => $request->campus_id ?? '',
+                'status'             => $request->status ?? '',
+            ],
         ]);
     }
 

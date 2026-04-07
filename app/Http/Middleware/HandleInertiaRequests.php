@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\AcademicPeriod;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -57,6 +58,26 @@ class HandleInertiaRequests extends Middleware
             'sidebarOpen' =>
                 ! $request->hasCookie('sidebar_state')
                 || $request->cookie('sidebar_state') === 'true',
+
+            // ── Periodos académicos (globales) ──────────────────────────
+            'academicPeriods' => fn () => AcademicPeriod::orderByDesc('id')
+                ->get(['id', 'name', 'status']),
+
+            'currentPeriod' => function () {
+                $sessionId = session('selected_period_id');
+
+                if ($sessionId) {
+                    $period = AcademicPeriod::find($sessionId, ['id', 'name', 'status']);
+                    if ($period) {
+                        return $period;
+                    }
+                }
+
+                // Fallback: periodo activo o el más reciente
+                return AcademicPeriod::where('status', 'active')
+                    ->first(['id', 'name', 'status'])
+                    ?? AcademicPeriod::latest()->first(['id', 'name', 'status']);
+            },
         ];
     }
 }

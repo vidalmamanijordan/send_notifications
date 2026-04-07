@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\AcademicPeriod;
 use App\Models\TeacherEvaluationStatus;
 use App\Models\ImportBatch;
 use Inertia\Inertia;
@@ -11,19 +12,25 @@ class ExpiredEvaluationController extends Controller
 {
     public function index()
     {
+        $periodId = session('selected_period_id')
+            ?? AcademicPeriod::where('status', 'active')->value('id');
+
         // 🔹 Obtener el lote activo
         $activeBatch = ImportBatch::where('is_active', true)->latest()->first();
 
-        $records = TeacherEvaluationStatus::with([
+        $query = TeacherEvaluationStatus::with([
             'teacher',
             'course',
             'academicPeriod',
             'campus',
-            'importBatch'
-        ])
-            ->where('expired_components', '>', 0)
-            ->latest()
-            ->paginate(10)
+            'importBatch',
+        ])->where('expired_components', '>', 0);
+
+        if ($periodId) {
+            $query->where('academic_period_id', $periodId);
+        }
+
+        $records = $query->latest()->paginate(10)
             ->through(function ($record) use ($activeBatch) {
                 return [
                     'id' => $record->id,

@@ -11,6 +11,8 @@ use App\Http\Controllers\Admin\NotificationBatchController;
 use App\Http\Controllers\Admin\NotificationTemplateController;
 use App\Http\Controllers\Admin\OfficeController;
 use App\Http\Controllers\Admin\ProgramController;
+use App\Http\Controllers\Admin\AcademicPeriodSwitchController;
+use App\Http\Controllers\Admin\TeacherController;
 
 Route::middleware(['auth', 'verified'])
     ->prefix('admin')
@@ -20,6 +22,12 @@ Route::middleware(['auth', 'verified'])
         Route::get('/', function () {
             return redirect()->route('dashboard');
         });
+
+        Route::post('switch-period', [AcademicPeriodSwitchController::class, 'switch'])->name('switch-period');
+
+        Route::get('teachers/search', [TeacherController::class, 'search'])->name('teachers.search');
+        Route::get('teachers/{teacher}', [TeacherController::class, 'show'])->name('teachers.show');
+        Route::patch('teachers/{teacher}', [TeacherController::class, 'update'])->name('teachers.update');
 
         Route::resource('campus', CampusController::class);
         Route::resource(

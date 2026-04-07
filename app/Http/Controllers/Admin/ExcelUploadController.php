@@ -17,18 +17,24 @@ class ExcelUploadController extends Controller
 {
     public function index()
     {
-        return Inertia::render('admin/excel-uploads/Index', [
-            'uploads' => ExcelUpload::with([
-                'academicPeriod',
-                'campus',
-                'user',
-                'importBatch.user'
-            ])
-                ->latest()
-                ->paginate(10),
+        $periodId = session('selected_period_id')
+            ?? AcademicPeriod::where('status', 'active')->value('id');
 
+        $uploadsQuery = ExcelUpload::with([
+            'academicPeriod',
+            'campus',
+            'user',
+            'importBatch.user',
+        ]);
+
+        if ($periodId) {
+            $uploadsQuery->where('academic_period_id', $periodId);
+        }
+
+        return Inertia::render('admin/excel-uploads/Index', [
+            'uploads'         => $uploadsQuery->latest()->paginate(10),
             'academicPeriods' => AcademicPeriod::select('id', 'name')->get(),
-            'campus' => Campus::select('id', 'name')->get(),
+            'campus'          => Campus::select('id', 'name')->get(),
         ]);
     }
 

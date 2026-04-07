@@ -14,8 +14,13 @@ class NotificationBatchDetail extends Model
         'sent_at'
     ];
 
+    public function notificationBatch()
+    {
+        return $this->belongsTo(NotificationBatch::class, 'notification_batch_id');
+    }
+
     public function teacher()
     {
-        return $this->belongsTo(\App\Models\Teacher::class, 'teacher_id');
+        return $this->belongsTo(Teacher::class, 'teacher_id');
     }
 }
