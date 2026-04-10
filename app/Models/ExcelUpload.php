@@ -14,7 +14,8 @@ class ExcelUpload extends Model
         'campus_id',
         'uploaded_by',
         'file_path',
-        'status'
+        'original_name',
+        'status',
     ];
 
     public function academicPeriod()

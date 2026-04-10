@@ -1,18 +1,19 @@
 <script setup lang="ts">
-import AppLayout from '@/layouts/AppLayout.vue';
-import { Head, Link, router } from '@inertiajs/vue3';
-import { Pencil, Trash2 } from 'lucide-vue-next';
-import { ref } from 'vue';
-import { useSwal } from '@/composables/useSwal';
-
-// 🔹 Modal
 import ProgramModal from '@/components/programs/ProgramModal.vue';
+import { useSwal } from '@/composables/useSwal';
+import AppLayout from '@/layouts/AppLayout.vue';
+import { Head, router } from '@inertiajs/vue3';
+import { BookOpen, Pencil, Trash2 } from 'lucide-vue-next';
+import { ref } from 'vue';
 
 const Swal = useSwal();
 
-/* =========================
-   Interfaces
-========================= */
+const translateLabel = (label: string): string =>
+    label.replace('Previous', 'Anterior').replace('Next', 'Siguiente');
+
+const isPageNumber = (label: string): boolean =>
+    /^\d+$/.test(label.replace(/&[^;]+;/g, '').trim());
+
 interface Program {
     id: number;
     name: string;
@@ -26,163 +27,196 @@ interface PaginationLink {
     active: boolean;
 }
 
-/* =========================
-   Props
-========================= */
 defineProps<{
     programs: {
         data: Program[];
         links: PaginationLink[];
+        total?: number;
     };
 }>();
 
-/* =========================
-   Modal State
-========================= */
 const showModal = ref(false);
 const modalMode = ref<'create' | 'edit'>('create');
 const selectedProgram = ref<Program | null>(null);
 
-/* =========================
-   Acciones
-========================= */
-const openCreateModal = () => {
+const activeAction = ref<{ id: number | null; type: 'edit' | 'delete' | null }>({ id: null, type: null });
+
+const setActive = (id: number, type: 'edit' | 'delete') => {
+    activeAction.value = { id, type };
+};
+
+const resetActive = () => {
+    setTimeout(() => { activeAction.value = { id: null, type: null }; }, 400);
+};
+
+const openCreate = () => {
     modalMode.value = 'create';
     selectedProgram.value = null;
     showModal.value = true;
 };
 
-const openEditModal = (program: Program) => {
+const openEdit = (item: Program) => {
+    setActive(item.id, 'edit');
     modalMode.value = 'edit';
-    selectedProgram.value = program;
+    selectedProgram.value = item;
     showModal.value = true;
 };
 
-const closeModal = () => {
-    showModal.value = false;
-};
+const deleteProgram = (item: Program) => {
+    setActive(item.id, 'delete');
 
-/* =========================
-   Eliminar Programa
-========================= */
-const deleteProgram = (program: Program) => {
     Swal.fire({
         title: '¿Eliminar programa?',
-        text: `El programa "${program.name}" será eliminado`,
+        html: `El programa <strong>${item.name}</strong> será eliminado permanentemente.`,
         icon: 'warning',
         showCancelButton: true,
         confirmButtonText: 'Sí, eliminar',
         cancelButtonText: 'Cancelar',
-        confirmButtonColor: '#dc2626',
+        confirmButtonColor: '#087ab1',
         cancelButtonColor: '#6b7280',
-        reverseButtons: true,
         focusCancel: true,
     }).then((result) => {
-        if (result.isConfirmed) {
-            router.delete(route('admin.programs.destroy', program.id));
+        if (!result.isConfirmed) {
+            resetActive();
+            return;
         }
+
+        Swal.fire({
+            title: '¿Estás completamente seguro?',
+            text: 'Esta acción no se puede deshacer.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, confirmar eliminación',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#dc2626',
+            cancelButtonColor: '#6b7280',
+            focusCancel: true,
+        }).then((second) => {
+            if (!second.isConfirmed) {
+                resetActive();
+                return;
+            }
+
+            router.delete(route('admin.programs.destroy', item.id), {
+                preserveScroll: true,
+                onFinish: () => resetActive(),
+            });
+        });
     });
+};
+
+const goToPage = (url: string | null) => {
+    if (!url) return;
+    router.visit(url, { preserveScroll: true, preserveState: true });
 };
 </script>
 
 <template>
-    <Head title="Programas" />
-
     <AppLayout>
-        <div class="space-y-6 px-8 py-6">
-            <!-- HEADER -->
-            <div class="flex items-center justify-between border-b border-gray-200 pb-4">
-                <h1 class="text-2xl font-semibold text-gray-800 dark:text-gray-100">
-                    Programas
-                </h1>
+        <Head title="Programas" />
 
+        <div class="space-y-6 px-6 py-6">
+            <!-- HEADER -->
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-[#087ab1] shadow-md">
+                        <BookOpen class="h-5 w-5 text-white" />
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold text-gray-900 dark:text-gray-100">Programas</h1>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">
+                            {{ programs.total ?? programs.data.length }} programa{{ (programs.total ?? programs.data.length) !== 1 ? 's' : '' }} registrado{{ (programs.total ?? programs.data.length) !== 1 ? 's' : '' }}
+                        </p>
+                    </div>
+                </div>
                 <button
-                    @click="openCreateModal"
-                    class="inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-700 active:scale-95"
+                    @click="openCreate"
+                    class="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-linear-to-r from-[#087ab1] to-[#68c8fb] px-4 py-2.5 text-sm font-medium text-white shadow-md transition hover:from-[#066a98] hover:to-[#4fbdf5] active:scale-95"
                 >
-                    + Nuevo Programa
+                    <BookOpen class="h-4 w-4" /> Nuevo Programa
                 </button>
             </div>
 
             <!-- TABLA -->
-            <div
-                class="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-900"
-            >
-                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                    <thead class="bg-gray-50 dark:bg-gray-800">
-                        <tr>
-                            <th class="px-6 py-2 text-xs font-semibold uppercase">#</th>
-                            <th class="px-6 py-2 text-xs font-semibold uppercase">
-                                Nombre
-                            </th>
-                            <th class="px-6 py-2 text-xs font-semibold uppercase">
-                                Código
-                            </th>
-                            <th class="px-6 py-2 text-xs font-semibold uppercase">
-                                Nivel
-                            </th>
-                            <th
-                                class="px-6 py-2 text-right text-xs font-semibold uppercase"
-                            >
-                                Acciones
-                            </th>
+            <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-900">
+                <table class="min-w-full divide-y divide-gray-100 dark:divide-gray-700">
+                    <thead>
+                        <tr class="bg-linear-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-800">
+                            <th class="px-5 py-3.5 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400">Nivel</th>
+                            <th class="px-5 py-3.5 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400">Nombre</th>
+                            <th class="px-5 py-3.5 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400">Código</th>
+                            <th class="px-5 py-3.5 text-right text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400">Acciones</th>
                         </tr>
                     </thead>
-
-                    <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                    <tbody class="divide-y divide-gray-100 dark:divide-gray-700/60">
                         <tr
-                            v-for="(item, index) in programs.data"
+                            v-for="item in programs.data"
                             :key="item.id"
-                            class="group transition-all duration-200 even:bg-gray-50/40 hover:bg-indigo-50/40 dark:even:bg-gray-800/40"
+                            class="group transition-all duration-150 hover:bg-[#68c8fb]/2 hover:shadow-[inset_3px_0_0_#087ab1] dark:hover:bg-[#68c8fb]/10 dark:hover:shadow-[inset_3px_0_0_#68c8fb]"
                         >
-                            <td class="px-6 py-2 text-sm">{{ index + 1 }}</td>
-
-                            <td class="px-6 py-2 text-sm font-medium">
-                                {{ item.name }}
-                            </td>
-
-                            <td class="px-6 py-2 text-sm">
-                                {{ item.code }}
-                            </td>
-
-                            <td class="px-6 py-2 text-sm">
+                            <!-- Nivel -->
+                            <td class="px-5 py-3.5">
                                 <span
-                                    class="rounded-full px-3 py-1 text-xs font-medium"
-                                    :class="
-                                        item.level === 'undergraduate'
-                                            ? 'bg-blue-100 text-blue-700'
-                                            : 'bg-purple-100 text-purple-700'
-                                    "
+                                    class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium"
+                                    :class="item.level === 'undergraduate'
+                                        ? 'bg-[#087ab1]/10 text-[#087ab1]'
+                                        : 'bg-violet-100 text-violet-700'"
                                 >
                                     {{ item.level === 'undergraduate' ? 'Pregrado' : 'Posgrado' }}
                                 </span>
                             </td>
 
-                            <td class="px-6 py-2 text-right">
-                                <div class="flex justify-end gap-2">
-                                    <button
-                                        @click="openEditModal(item)"
-                                        class="flex h-9 w-9 items-center justify-center rounded-full text-indigo-600 transition hover:bg-indigo-600 hover:text-white"
-                                    >
-                                        <Pencil class="h-4 w-4" />
-                                    </button>
+                            <!-- Nombre -->
+                            <td class="px-5 py-3.5">
+                                <div class="flex items-center gap-2.5">
+                                    <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#087ab1]/10">
+                                        <BookOpen class="h-4 w-4 text-[#087ab1]" />
+                                    </div>
+                                    <span class="text-sm font-semibold text-gray-800 dark:text-gray-100">{{ item.name }}</span>
+                                </div>
+                            </td>
 
+                            <!-- Código -->
+                            <td class="px-5 py-3.5">
+                                <span class="text-sm text-gray-600 dark:text-gray-300">{{ item.code }}</span>
+                            </td>
+
+                            <!-- Acciones -->
+                            <td class="px-5 py-3.5 text-right">
+                                <div class="flex items-center justify-end gap-1.5">
+                                    <button
+                                        @click="openEdit(item)"
+                                        title="Editar"
+                                        class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full transition-all duration-200"
+                                        :class="activeAction.id === item.id && activeAction.type === 'edit'
+                                            ? 'bg-[#087ab1] text-white shadow-md'
+                                            : 'text-[#087ab1] hover:bg-[#087ab1] hover:text-white'"
+                                    >
+                                        <Pencil class="h-3.5 w-3.5" />
+                                    </button>
                                     <button
                                         @click="deleteProgram(item)"
-                                        class="flex h-9 w-9 items-center justify-center rounded-full text-red-600 transition hover:bg-red-600 hover:text-white"
+                                        title="Eliminar"
+                                        class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full transition-all duration-200"
+                                        :class="activeAction.id === item.id && activeAction.type === 'delete'
+                                            ? 'bg-red-600 text-white shadow-md'
+                                            : 'text-red-500 hover:bg-red-600 hover:text-white'"
                                     >
-                                        <Trash2 class="h-4 w-4" />
+                                        <Trash2 class="h-3.5 w-3.5" />
                                     </button>
                                 </div>
                             </td>
                         </tr>
 
+                        <!-- Empty state -->
                         <tr v-if="programs.data.length === 0">
-                            <td
-                                colspan="5"
-                                class="px-6 py-8 text-center text-sm text-gray-500"
-                            >
-                                No hay programas registrados
+                            <td colspan="4" class="px-6 py-16 text-center">
+                                <div class="flex flex-col items-center gap-3">
+                                    <div class="flex h-14 w-14 items-center justify-center rounded-full bg-[#087ab1]/10 dark:bg-[#087ab1]/20">
+                                        <BookOpen class="h-7 w-7 text-[#087ab1]/60" />
+                                    </div>
+                                    <p class="text-sm font-medium text-gray-500">No hay programas registrados</p>
+                                </div>
                             </td>
                         </tr>
                     </tbody>
@@ -190,20 +224,25 @@ const deleteProgram = (program: Program) => {
             </div>
 
             <!-- PAGINACIÓN -->
-            <div class="flex justify-end">
+            <div v-if="programs.links && programs.links.length > 3" class="flex justify-end">
                 <nav class="inline-flex gap-1">
-                    <Link
-                        v-for="link in programs.links"
-                        :key="link.label"
-                        :href="link.url ?? '#'"
-                        v-html="link.label"
-                        class="rounded-md border px-3 py-1 text-sm transition"
-                        :class="{
-                            'border-indigo-600 bg-indigo-600 text-white': link.active,
-                            'border-gray-300 hover:bg-gray-100': !link.active && link.url,
-                            'cursor-not-allowed border-gray-200 text-gray-400': !link.url,
-                        }"
-                    />
+                    <template v-for="link in programs.links" :key="link.label">
+                        <a
+                            v-if="link.url"
+                            :href="link.url"
+                            @click.prevent="goToPage(link.url)"
+                            class="rounded-lg border px-3 py-1.5 text-sm font-medium transition-all"
+                            :class="link.active && isPageNumber(link.label)
+                                ? 'border-[#68c8fb] bg-[#68c8fb] text-white shadow-sm'
+                                : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300 hover:bg-gray-50 hover:text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400'"
+                            v-html="translateLabel(link.label)"
+                        />
+                        <span
+                            v-else
+                            class="cursor-not-allowed rounded-lg border border-gray-100 bg-white px-3 py-1.5 text-sm font-medium text-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-600"
+                            v-html="translateLabel(link.label)"
+                        />
+                    </template>
                 </nav>
             </div>
         </div>
@@ -213,8 +252,7 @@ const deleteProgram = (program: Program) => {
             :show="showModal"
             :mode="modalMode"
             :program="selectedProgram"
-            @close="closeModal"
-            @success="closeModal"
+            @close="showModal = false; resetActive();"
         />
     </AppLayout>
 </template>

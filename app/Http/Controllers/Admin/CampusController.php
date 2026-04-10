@@ -18,6 +18,7 @@ class CampusController extends Controller
 
     public function store(Request $request)
     {
+        abort_if(! auth()->user()->can('campus.create'), 403);
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'code' => 'nullable|string|max:50|unique:campus,code',
@@ -32,9 +33,10 @@ class CampusController extends Controller
 
     public function update(Request $request, Campus $campus)
     {
+        abort_if(! auth()->user()->can('campus.update'), 403);
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'code' => 'nullable|string|max:50|unique:campus,code,' . $campus->id,
+            'code' => 'nullable|string|max:50|unique:campus,code,'.$campus->id,
         ]);
 
         $campus->update($validated);
@@ -46,6 +48,7 @@ class CampusController extends Controller
 
     public function destroy(Campus $campus)
     {
+        abort_if(! auth()->user()->can('campus.delete'), 403);
         $campus->delete();
 
         return redirect()

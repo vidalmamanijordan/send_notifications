@@ -11,19 +11,21 @@ class NotificationTemplateController extends Controller
 {
     public function index()
     {
-        $templates = NotificationTemplate::latest()->paginate(10);
+        $templates = NotificationTemplate::latest()->paginate(2);
 
         return Inertia::render('admin/notification-templates/Index', [
-            'templates' => $templates
+            'templates' => $templates,
         ]);
     }
 
     public function store(Request $request)
     {
+        abort_if(! auth()->user()->can('notificationTemplates.create'), 403);
+
         $validated = $request->validate([
-            'name'      => 'required|string|max:150',
-            'subject'   => 'required|string|max:255',
-            'body'      => 'required|string',
+            'name' => 'required|string|max:150',
+            'subject' => 'required|string|max:255',
+            'body' => 'required|string',
             'is_active' => 'boolean',
         ]);
 
@@ -37,16 +39,18 @@ class NotificationTemplateController extends Controller
     public function show(NotificationTemplate $notificationTemplate)
     {
         return Inertia::render('Admin/NotificationTemplates/Show', [
-            'template' => $notificationTemplate
+            'template' => $notificationTemplate,
         ]);
     }
 
     public function update(Request $request, NotificationTemplate $notificationTemplate)
     {
+        abort_if(! auth()->user()->can('notificationTemplates.update'), 403);
+
         $validated = $request->validate([
-            'name'      => 'required|string|max:150',
-            'subject'   => 'required|string|max:255',
-            'body'      => 'required|string',
+            'name' => 'required|string|max:150',
+            'subject' => 'required|string|max:255',
+            'body' => 'required|string',
             'is_active' => 'boolean',
         ]);
 
@@ -59,6 +63,8 @@ class NotificationTemplateController extends Controller
 
     public function destroy(NotificationTemplate $notificationTemplate)
     {
+        abort_if(! auth()->user()->can('notificationTemplates.delete'), 403);
+
         $notificationTemplate->delete();
 
         return redirect()

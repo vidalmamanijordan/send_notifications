@@ -1,231 +1,348 @@
 <script setup lang="ts">
-import AppLayout from '@/layouts/AppLayout.vue'
-import { Head, router } from '@inertiajs/vue3'
-import { ref } from 'vue'
-import { Pencil, Trash2 } from 'lucide-vue-next'
-import NotificationTemplateModal from '@/components/notifications/NotificationTemplateModal.vue'
+import NotificationTemplateModal from '@/components/notifications/NotificationTemplateModal.vue';
+import { useSwal } from '@/composables/useSwal';
+import AppLayout from '@/layouts/AppLayout.vue';
+import { Head, router } from '@inertiajs/vue3';
+import { FileText, Files, Pencil, Trash2 } from 'lucide-vue-next';
+import { ref } from 'vue';
+
+const Swal = useSwal();
+
+const translateLabel = (label: string): string =>
+    label.replace('Previous', 'Anterior').replace('Next', 'Siguiente');
+
+const isPageNumber = (label: string): boolean =>
+    /^\d+$/.test(label.replace(/&[^;]+;/g, '').trim());
 
 interface Template {
-    id: number
-    name: string
-    subject: string
-    body: string
-    is_active: boolean
-    created_at: string
+    id: number;
+    name: string;
+    subject: string;
+    body: string;
+    is_active: boolean;
+    created_at: string;
 }
 
 defineProps<{
-    templates: any
-}>()
+    templates: any;
+}>();
 
 /**
  * Control modal
  */
-const showModal = ref(false)
-const selectedTemplate = ref<Template | null>(null)
+const showModal = ref(false);
+const selectedTemplate = ref<Template | null>(null);
 
 /**
  * Estado visual de botones activos
  */
 const activeAction = ref<{
-    id: number | null
-    type: 'edit' | 'delete' | null
+    id: number | null;
+    type: 'edit' | 'delete' | null;
 }>({
     id: null,
-    type: null
-})
+    type: null,
+});
 
 const setActive = (id: number, type: 'edit' | 'delete') => {
-    activeAction.value = { id, type }
-}
+    activeAction.value = { id, type };
+};
 
 const resetActive = () => {
     setTimeout(() => {
-        activeAction.value = { id: null, type: null }
-    }, 400)
-}
+        activeAction.value = { id: null, type: null };
+    }, 400);
+};
 
 /**
  * Crear
  */
 const openCreate = () => {
-    selectedTemplate.value = null
-    showModal.value = true
-}
+    selectedTemplate.value = null;
+    showModal.value = true;
+};
 
 /**
  * Editar
  */
 const openEdit = (template: Template) => {
-    setActive(template.id, 'edit')
-    selectedTemplate.value = template
-    showModal.value = true
-}
+    setActive(template.id, 'edit');
+    selectedTemplate.value = template;
+    showModal.value = true;
+};
 
 /**
  * Eliminar
  */
 const deleteTemplate = (template: Template) => {
-    setActive(template.id, 'delete')
+    setActive(template.id, 'delete');
 
-    if (!confirm(`¿Eliminar la plantilla "${template.name}"?`)) {
-        resetActive()
-        return
-    }
-
-    router.delete(
-        route('admin.notification-templates.destroy', template.id),
-        {
-            preserveScroll: true,
-            onFinish: () => {
-                resetActive()
-            }
+    Swal.fire({
+        title: '¿Eliminar plantilla?',
+        html: `La plantilla <strong>${template.name}</strong> será eliminada permanentemente.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#087ab1',
+        cancelButtonColor: '#6b7280',
+        focusCancel: true,
+    }).then((result) => {
+        if (!result.isConfirmed) {
+            resetActive();
+            return;
         }
-    )
-}
+
+        Swal.fire({
+            title: '¿Estás completamente seguro?',
+            text: 'Esta acción no se puede deshacer.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, confirmar eliminación',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#dc2626',
+            cancelButtonColor: '#6b7280',
+            focusCancel: true,
+        }).then((second) => {
+            if (!second.isConfirmed) {
+                resetActive();
+                return;
+            }
+
+            router.delete(
+                route('admin.notification-templates.destroy', template.id),
+                {
+                    preserveScroll: true,
+                    onFinish: () => resetActive(),
+                },
+            );
+        });
+    });
+};
+
+const formatDate = (date: string): string =>
+    new Date(date).toLocaleDateString('es-PE', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+    });
 
 /**
  * Paginación
  */
 const goToPage = (url: string | null) => {
-    if (!url) return
+    if (!url) return;
     router.visit(url, {
         preserveScroll: true,
-        preserveState: true
-    })
-}
+        preserveState: true,
+    });
+};
 </script>
 
 <template>
     <AppLayout>
         <Head title="Plantillas de Notificación" />
 
-        <div class="space-y-6 p-6">
-
+        <div class="space-y-6 px-6 py-6">
             <!-- HEADER -->
-            <div class="flex items-center justify-between">
-                <div>
-                    <h1 class="text-xl font-semibold">
-                        Plantillas de Notificación
-                    </h1>
-                    <p class="text-sm text-gray-500">
-                        Aquí se gestionan las plantillas que serán utilizadas
-                        para generar los mensajes de los lotes académicos.
-                    </p>
+            <div
+                class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
+            >
+                <div class="flex items-center gap-3">
+                    <div
+                        class="flex h-10 w-10 items-center justify-center rounded-xl bg-[#087ab1] shadow-md"
+                    >
+                        <Files class="h-5 w-5 text-white" />
+                    </div>
+                    <div>
+                        <h1
+                            class="text-xl font-bold text-gray-900 dark:text-gray-100"
+                        >
+                            Plantillas de Notificación
+                        </h1>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">
+                            {{ templates.total ?? templates.data.length }}
+                            plantilla{{
+                                (templates.total ?? templates.data.length) !== 1
+                                    ? 's'
+                                    : ''
+                            }}
+                            registrada{{
+                                (templates.total ?? templates.data.length) !== 1
+                                    ? 's'
+                                    : ''
+                            }}
+                        </p>
+                    </div>
                 </div>
 
                 <button
                     @click="openCreate"
-                    class="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg shadow hover:bg-indigo-700 transition"
+                    class="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-linear-to-r from-[#087ab1] to-[#68c8fb] px-4 py-2.5 text-sm font-medium text-white shadow-md transition hover:from-[#066a98] hover:to-[#4fbdf5] active:scale-95"
                 >
+                    <FileText class="h-4 w-4" />
                     Nueva Plantilla
                 </button>
             </div>
 
             <!-- TABLA -->
-            <div class="bg-white rounded-xl shadow overflow-x-auto">
-                <table class="min-w-full text-sm">
-                    <thead class="bg-gray-100">
-                        <tr>
-                            <th class="p-3 text-left">Estado</th>
-                            <th class="p-3 text-left">Nombre</th>
-                            <th class="p-3 text-left">Asunto</th>
-                            <th class="p-3 text-left">Creado</th>
-                            <th class="p-3 text-center">Acciones</th>
+            <div
+                class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-900"
+            >
+                <table
+                    class="min-w-full divide-y divide-gray-100 dark:divide-gray-700"
+                >
+                    <thead>
+                        <tr
+                            class="bg-linear-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-800"
+                        >
+                            <th
+                                class="px-5 py-3.5 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
+                            >
+                                Estado
+                            </th>
+                            <th
+                                class="px-5 py-3.5 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
+                            >
+                                Nombre
+                            </th>
+                            <th
+                                class="hidden px-5 py-3.5 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase md:table-cell dark:text-gray-400"
+                            >
+                                Asunto
+                            </th>
+                            <th
+                                class="hidden px-5 py-3.5 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase lg:table-cell dark:text-gray-400"
+                            >
+                                Creado
+                            </th>
+                            <th
+                                class="px-5 py-3.5 text-right text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
+                            >
+                                Acciones
+                            </th>
                         </tr>
                     </thead>
 
-                    <tbody>
+                    <tbody
+                        class="divide-y divide-gray-100 dark:divide-gray-700/60"
+                    >
                         <tr
                             v-for="template in templates.data"
                             :key="template.id"
-                            class="border-t transition"
+                            class="group transition-all duration-150 hover:bg-[#68c8fb]/2 hover:shadow-[inset_3px_0_0_#087ab1] dark:hover:bg-[#68c8fb]/10 dark:hover:shadow-[inset_3px_0_0_#68c8fb]"
                         >
                             <!-- Estado -->
-                            <td class="p-3">
+                            <td class="px-5 py-3.5">
                                 <span
                                     v-if="template.is_active"
-                                    class="px-2 py-1 text-xs rounded bg-green-200 text-green-800 font-semibold"
+                                    class="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
                                 >
-                                    ACTIVA
+                                    <span
+                                        class="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500"
+                                    />
+                                    Activa
                                 </span>
                                 <span
                                     v-else
-                                    class="px-2 py-1 text-xs rounded bg-gray-200 text-gray-700"
+                                    class="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-500 dark:bg-gray-800 dark:text-gray-400"
                                 >
+                                    <span
+                                        class="h-1.5 w-1.5 rounded-full bg-gray-400"
+                                    />
                                     Inactiva
                                 </span>
                             </td>
 
                             <!-- Nombre -->
-                            <td class="p-3 font-medium">
-                                {{ template.name }}
+                            <td class="px-5 py-3.5">
+                                <div class="flex items-center gap-2.5">
+                                    <div
+                                        class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#087ab1]/10"
+                                    >
+                                        <FileText
+                                            class="h-4 w-4 text-[#087ab1]"
+                                        />
+                                    </div>
+                                    <span
+                                        class="text-sm font-semibold text-gray-800 dark:text-gray-100"
+                                    >
+                                        {{ template.name }}
+                                    </span>
+                                </div>
                             </td>
 
                             <!-- Asunto -->
-                            <td class="p-3">
-                                {{ template.subject }}
+                            <td class="hidden px-5 py-3.5 md:table-cell">
+                                <span
+                                    class="text-sm text-gray-600 dark:text-gray-300"
+                                >
+                                    {{ template.subject }}
+                                </span>
                             </td>
 
                             <!-- Fecha -->
-                            <td class="p-3 text-gray-500">
-                                {{ template.created_at }}
+                            <td class="hidden px-5 py-3.5 lg:table-cell">
+                                <span class="text-sm text-gray-500 dark:text-gray-400">
+                                    {{ formatDate(template.created_at) }}
+                                </span>
                             </td>
 
                             <!-- Acciones -->
-                            <td class="p-3">
-                                <div class="flex justify-center gap-3">
-
+                            <td class="px-5 py-3.5 text-right">
+                                <div
+                                    class="flex items-center justify-end gap-1.5"
+                                >
                                     <!-- EDITAR -->
                                     <button
                                         @click="openEdit(template)"
-                                        class="relative flex h-9 w-9 cursor-pointer items-center justify-center rounded-full transition-all duration-200"
-                                        :class="[
+                                        title="Editar plantilla"
+                                        class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full transition-all duration-200"
+                                        :class="
                                             activeAction.id === template.id &&
                                             activeAction.type === 'edit'
-                                                ? 'bg-indigo-600 text-white shadow-lg'
-                                                : 'text-indigo-600 hover:bg-indigo-600 hover:text-white',
-                                        ]"
+                                                ? 'bg-[#087ab1] text-white shadow-md'
+                                                : 'text-[#087ab1] hover:bg-[#087ab1] hover:text-white'
+                                        "
                                     >
-                                        <Pencil
-                                            class="h-4 w-4 transition-transform duration-200"
-                                            :class="{
-                                                'scale-110 rotate-12':
-                                                    activeAction.id === template.id &&
-                                                    activeAction.type === 'edit',
-                                            }"
-                                        />
+                                        <Pencil class="h-3.5 w-3.5" />
                                     </button>
 
                                     <!-- ELIMINAR -->
                                     <button
                                         @click="deleteTemplate(template)"
-                                        class="relative flex h-9 w-9 cursor-pointer items-center justify-center rounded-full transition-all duration-200"
-                                        :class="[
+                                        title="Eliminar plantilla"
+                                        class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full transition-all duration-200"
+                                        :class="
                                             activeAction.id === template.id &&
                                             activeAction.type === 'delete'
-                                                ? 'bg-red-600 text-white shadow-lg'
-                                                : 'text-red-600 hover:bg-red-600 hover:text-white',
-                                        ]"
+                                                ? 'bg-red-600 text-white shadow-md'
+                                                : 'text-red-500 hover:bg-red-600 hover:text-white'
+                                        "
                                     >
-                                        <Trash2
-                                            class="h-4 w-4 transition-transform duration-200"
-                                            :class="{
-                                                'scale-110 rotate-12':
-                                                    activeAction.id === template.id &&
-                                                    activeAction.type === 'delete',
-                                            }"
-                                        />
+                                        <Trash2 class="h-3.5 w-3.5" />
                                     </button>
-
                                 </div>
                             </td>
                         </tr>
 
                         <!-- Sin datos -->
                         <tr v-if="templates.data.length === 0">
-                            <td colspan="5" class="p-6 text-center text-gray-500">
-                                No existen plantillas registradas aún
+                            <td colspan="5" class="px-6 py-16 text-center">
+                                <div class="flex flex-col items-center gap-3">
+                                    <div
+                                        class="flex h-14 w-14 items-center justify-center rounded-full bg-[#087ab1]/10 dark:bg-[#087ab1]/20"
+                                    >
+                                        <FileText
+                                            class="h-7 w-7 text-[#087ab1]/60"
+                                        />
+                                    </div>
+                                    <p
+                                        class="text-sm font-medium text-gray-500"
+                                    >
+                                        No hay plantillas registradas
+                                    </p>
+                                </div>
                             </td>
                         </tr>
                     </tbody>
@@ -235,26 +352,54 @@ const goToPage = (url: string | null) => {
             <!-- PAGINACIÓN -->
             <div
                 v-if="templates.links.length > 3"
-                class="flex justify-end mt-4"
+                class="flex items-center justify-between"
             >
-                <div class="flex flex-wrap gap-1">
-                    <button
+                <p class="text-sm text-gray-500 dark:text-gray-400">
+                    <template v-if="templates.from">
+                        Mostrando
+                        <span
+                            class="font-medium text-gray-700 dark:text-gray-300"
+                            >{{ templates.from }}</span
+                        >
+                        a
+                        <span
+                            class="font-medium text-gray-700 dark:text-gray-300"
+                            >{{ templates.to }}</span
+                        >
+                        de
+                        <span
+                            class="font-medium text-gray-700 dark:text-gray-300"
+                            >{{ templates.total }}</span
+                        >
+                        resultados
+                    </template>
+                    <template v-else>Sin resultados</template>
+                </p>
+                <nav class="inline-flex gap-1">
+                    <template
                         v-for="link in templates.links"
                         :key="link.label"
-                        v-html="link.label"
-                        @click="goToPage(link.url)"
-                        :disabled="!link.url"
-                        class="px-3 py-1 text-sm rounded border transition"
-                        :class="[
-                            link.active
-                                ? 'bg-indigo-600 text-white border-indigo-600'
-                                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100',
-                            !link.url && 'opacity-50 cursor-not-allowed'
-                        ]"
-                    />
-                </div>
+                    >
+                        <a
+                            v-if="link.url"
+                            :href="link.url"
+                            @click.prevent="goToPage(link.url)"
+                            class="rounded-lg border px-3 py-1.5 text-sm font-medium transition-all"
+                            :class="
+                                link.active && isPageNumber(link.label)
+                                    ? 'border-[#68c8fb] bg-[#68c8fb] text-white shadow-sm'
+                                    : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300 hover:bg-gray-50 hover:text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400'
+                            "
+                            v-html="translateLabel(link.label)"
+                        />
+                        <span
+                            v-else
+                            class="cursor-not-allowed rounded-lg border border-gray-100 bg-white px-3 py-1.5 text-sm font-medium text-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-600"
+                            v-html="translateLabel(link.label)"
+                        />
+                    </template>
+                </nav>
             </div>
-
         </div>
 
         <!-- MODAL -->

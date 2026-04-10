@@ -14,6 +14,9 @@ class ImportBatch extends Model
         'imported_by',
         'excel_upload_id',
         'file_name',
+        'file_size',
+        'total_rows',
+        'failed_rows',
         'imported_at',
         'is_active',
     ];

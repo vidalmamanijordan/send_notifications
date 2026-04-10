@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import OfficeModal from '@/components/offices/OfficeModal.vue';
+import { useSwal } from '@/composables/useSwal';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, router, useForm } from '@inertiajs/vue3';
-import { Download, ImageIcon, Pencil, Plus, Trash2, X } from 'lucide-vue-next';
+import { Building2, Download, ImageIcon, Pencil, Plus, Trash2, X } from 'lucide-vue-next';
 import { computed, ref } from 'vue';
+
+const Swal = useSwal();
 
 interface Office {
     id: number;
@@ -93,32 +96,85 @@ const save = (modalForm: typeof form) => {
         modalForm.put(route('admin.offices.update', editingOffice.value.id), {
             preserveScroll: true,
             forceFormData: true,
-            onSuccess: () => (showModal.value = false),
+            onSuccess: () => {
+                showModal.value = false;
+                resetActive();
+            },
         });
     } else {
         modalForm.post(route('admin.offices.store'), {
             preserveScroll: true,
             forceFormData: true,
-            onSuccess: () => (showModal.value = false),
+            onSuccess: () => {
+                showModal.value = false;
+                resetActive();
+            },
         });
     }
 };
 
 const remove = (office: Office) => {
-    if (!confirm('¿Seguro que deseas eliminar esta oficina?')) return;
-    router.delete(route('admin.offices.destroy', office.id));
+    setActive(office.id, 'delete');
+
+    Swal.fire({
+        title: '¿Eliminar oficina?',
+        html: `La oficina <strong>${office.name}</strong> será eliminada permanentemente.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#087ab1',
+        cancelButtonColor: '#6b7280',
+        focusCancel: true,
+    }).then((result) => {
+        if (!result.isConfirmed) {
+            resetActive();
+            return;
+        }
+
+        Swal.fire({
+            title: '¿Estás completamente seguro?',
+            text: 'Esta acción no se puede deshacer.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, confirmar eliminación',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#dc2626',
+            cancelButtonColor: '#6b7280',
+            focusCancel: true,
+        }).then((second) => {
+            if (!second.isConfirmed) {
+                resetActive();
+                return;
+            }
+
+            router.delete(route('admin.offices.destroy', office.id), {
+                preserveScroll: true,
+                onFinish: () => resetActive(),
+            });
+        });
+    });
 };
 
-const statusClasses = (active: boolean) =>
-    active
-        ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200'
-        : 'bg-rose-50 text-rose-700 ring-1 ring-rose-200';
+const activeAction = ref<{ id: number | null; type: 'edit' | 'delete' | null }>({
+    id: null,
+    type: null,
+});
+
+const setActive = (id: number, type: 'edit' | 'delete') => {
+    activeAction.value = { id, type };
+};
+
+const resetActive = () => {
+    setTimeout(() => {
+        activeAction.value = { id: null, type: null };
+    }, 400);
+};
 
 const levelClasses = (level: number) => {
-    if (level === 1)
-        return 'bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200';
-    if (level === 2) return 'bg-blue-50 text-blue-700 ring-1 ring-blue-200';
-    return 'bg-gray-50 text-gray-700 ring-1 ring-gray-200';
+    if (level === 1) return 'bg-[#087ab1]/10 text-[#087ab1] ring-1 ring-[#087ab1]/20';
+    if (level === 2) return 'bg-[#68c8fb]/15 text-[#087ab1] ring-1 ring-[#68c8fb]/30';
+    return 'bg-gray-100 text-gray-600 ring-1 ring-gray-200';
 };
 
 const closeModal = () => {
@@ -127,26 +183,48 @@ const closeModal = () => {
 
     form.defaults(initialForm());
     form.reset();
+    resetActive();
 };
+
+const translateLabel = (label: string): string =>
+    label.replace('Previous', 'Anterior').replace('Next', 'Siguiente');
+
+const isPageNumber = (label: string): boolean =>
+    /^\d+$/.test(label.replace(/&[^;]+;/g, '').trim());
 </script>
 
 <template>
     <Head title="Oficinas" />
 
     <AppLayout>
-        <div class="space-y-6 p-6">
+        <div class="space-y-6 px-6 py-6">
             <!-- HEADER -->
-            <div class="flex items-center justify-between">
-                <div>
-                    <h1 class="text-xl font-semibold">Oficinas</h1>
-                    <p class="text-sm text-gray-500">
-                        Configuración de remitentes de notificaciones.
-                    </p>
+            <div
+                class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
+            >
+                <div class="flex items-center gap-3">
+                    <div
+                        class="flex h-10 w-10 items-center justify-center rounded-xl bg-[#087ab1] shadow-md"
+                    >
+                        <Building2 class="h-5 w-5 text-white" />
+                    </div>
+                    <div>
+                        <h1
+                            class="text-xl font-bold text-gray-900 dark:text-gray-100"
+                        >
+                            Oficinas
+                        </h1>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">
+                            {{ offices.length }}
+                            oficina{{ offices.length !== 1 ? 's' : '' }}
+                            registrada{{ offices.length !== 1 ? 's' : '' }}
+                        </p>
+                    </div>
                 </div>
 
                 <button
                     @click="openCreate"
-                    class="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm text-white shadow transition hover:bg-indigo-700"
+                    class="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-linear-to-r from-[#087ab1] to-[#68c8fb] px-4 py-2.5 text-sm font-medium text-white shadow-md transition hover:from-[#066a98] hover:to-[#4fbdf5] active:scale-95"
                 >
                     <Plus class="h-4 w-4" />
                     Nueva Oficina
@@ -154,27 +232,64 @@ const closeModal = () => {
             </div>
 
             <!-- TABLA -->
-            <div class="overflow-x-auto rounded-xl bg-white shadow">
-                <table class="min-w-full text-sm">
-                    <thead class="bg-gray-100">
-                        <tr>
-                            <th class="p-3 text-left">Firma</th>
-                            <th class="p-3 text-left">Nombre</th>
-                            <th class="p-3 text-left">Código</th>
-                            <th class="p-3 text-left">Correo</th>
-                            <th class="p-3 text-left">Nivel</th>
-                            <th class="p-3 text-left">Estado</th>
-                            <th class="p-3 text-center">Acciones</th>
+            <div
+                class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-900"
+            >
+                <table
+                    class="min-w-full divide-y divide-gray-100 dark:divide-gray-700"
+                >
+                    <thead>
+                        <tr
+                            class="bg-linear-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-800"
+                        >
+                            <th
+                                class="px-5 py-3.5 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
+                            >
+                                Firma
+                            </th>
+                            <th
+                                class="px-5 py-3.5 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
+                            >
+                                Nombre
+                            </th>
+                            <th
+                                class="hidden px-5 py-3.5 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase md:table-cell dark:text-gray-400"
+                            >
+                                Código
+                            </th>
+                            <th
+                                class="hidden px-5 py-3.5 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase lg:table-cell dark:text-gray-400"
+                            >
+                                Correo
+                            </th>
+                            <th
+                                class="hidden px-5 py-3.5 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase sm:table-cell dark:text-gray-400"
+                            >
+                                Nivel
+                            </th>
+                            <th
+                                class="px-5 py-3.5 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
+                            >
+                                Estado
+                            </th>
+                            <th
+                                class="px-5 py-3.5 text-right text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
+                            >
+                                Acciones
+                            </th>
                         </tr>
                     </thead>
 
-                    <tbody>
+                    <tbody
+                        class="divide-y divide-gray-100 dark:divide-gray-700/60"
+                    >
                         <tr
                             v-for="office in offices"
                             :key="office.id"
-                            class="border-t transition hover:bg-gray-50"
+                            class="group transition-all duration-150 hover:bg-[#68c8fb]/2 hover:shadow-[inset_3px_0_0_#087ab1] dark:hover:bg-[#68c8fb]/10 dark:hover:shadow-[inset_3px_0_0_#68c8fb]"
                         >
-                            <td class="p-3 text-center">
+                            <!-- Firma -->
+                            <td class="px-5 py-3.5 text-center">
                                 <div class="flex justify-center">
                                     <img
                                         v-if="office.signature"
@@ -193,11 +308,42 @@ const closeModal = () => {
                                     </span>
                                 </div>
                             </td>
-                            <td class="p-3 font-medium">{{ office.name }}</td>
-                            <td class="p-3 text-gray-500">{{ office.code }}</td>
-                            <td class="p-3">
+
+                            <!-- Nombre -->
+                            <td class="px-5 py-3.5">
+                                <div class="flex items-center gap-2.5">
+                                    <div
+                                        class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#087ab1]/10"
+                                    >
+                                        <Building2
+                                            class="h-4 w-4 text-[#087ab1]"
+                                        />
+                                    </div>
+                                    <span
+                                        class="text-sm font-semibold text-gray-800 dark:text-gray-100"
+                                    >
+                                        {{ office.name }}
+                                    </span>
+                                </div>
+                            </td>
+
+                            <!-- Código -->
+                            <td class="hidden px-5 py-3.5 md:table-cell">
+                                <span
+                                    class="text-sm text-gray-600 dark:text-gray-300"
+                                >
+                                    {{ office.code }}
+                                </span>
+                            </td>
+
+                            <!-- Correo -->
+                            <td class="hidden px-5 py-3.5 lg:table-cell">
                                 <div>
-                                    <div>{{ office.email }}</div>
+                                    <div
+                                        class="text-sm text-gray-600 dark:text-gray-300"
+                                    >
+                                        {{ office.email }}
+                                    </div>
                                     <div
                                         v-if="office.cc_email"
                                         class="text-xs text-gray-400"
@@ -206,48 +352,100 @@ const closeModal = () => {
                                     </div>
                                 </div>
                             </td>
-                            <td class="p-3">
+
+                            <!-- Nivel -->
+                            <td class="hidden px-5 py-3.5 sm:table-cell">
                                 <span
-                                    class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold"
+                                    class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold"
                                     :class="levelClasses(office.level)"
                                 >
                                     Nivel {{ office.level }}
                                 </span>
                             </td>
-                            <td class="p-3">
+
+                            <!-- Estado -->
+                            <td class="px-5 py-3.5">
                                 <span
-                                    class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold"
-                                    :class="statusClasses(office.is_active)"
+                                    v-if="office.is_active"
+                                    class="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
                                 >
-                                    {{
-                                        office.is_active ? 'Activo' : 'Inactivo'
-                                    }}
+                                    <span
+                                        class="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500"
+                                    />
+                                    Activo
+                                </span>
+                                <span
+                                    v-else
+                                    class="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-500 dark:bg-gray-800 dark:text-gray-400"
+                                >
+                                    <span
+                                        class="h-1.5 w-1.5 rounded-full bg-gray-400"
+                                    />
+                                    Inactivo
                                 </span>
                             </td>
-                            <td class="p-3">
-                                <div class="flex justify-center gap-2">
+
+                            <!-- Acciones -->
+                            <td class="px-5 py-3.5 text-right">
+                                <div
+                                    class="flex items-center justify-end gap-1.5"
+                                >
+                                    <!-- EDITAR -->
                                     <button
-                                        @click="openEdit(office)"
-                                        class="flex h-9 w-9 items-center justify-center rounded-full text-indigo-600 transition hover:bg-indigo-600 hover:text-white"
+                                        @click="
+                                            setActive(office.id, 'edit');
+                                            openEdit(office);
+                                        "
+                                        title="Editar oficina"
+                                        class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full transition-all duration-200"
+                                        :class="
+                                            activeAction.id === office.id &&
+                                            activeAction.type === 'edit'
+                                                ? 'bg-[#087ab1] text-white shadow-md'
+                                                : 'text-[#087ab1] hover:bg-[#087ab1] hover:text-white'
+                                        "
                                     >
-                                        <Pencil class="h-4 w-4" />
+                                        <Pencil class="h-3.5 w-3.5" />
                                     </button>
+
+                                    <!-- ELIMINAR -->
                                     <button
-                                        @click="remove(office)"
-                                        class="flex h-9 w-9 items-center justify-center rounded-full text-rose-600 transition hover:bg-rose-600 hover:text-white"
+                                        @click="
+                                            setActive(office.id, 'delete');
+                                            remove(office);
+                                        "
+                                        title="Eliminar oficina"
+                                        class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full transition-all duration-200"
+                                        :class="
+                                            activeAction.id === office.id &&
+                                            activeAction.type === 'delete'
+                                                ? 'bg-red-600 text-white shadow-md'
+                                                : 'text-red-500 hover:bg-red-600 hover:text-white'
+                                        "
                                     >
-                                        <Trash2 class="h-4 w-4" />
+                                        <Trash2 class="h-3.5 w-3.5" />
                                     </button>
                                 </div>
                             </td>
                         </tr>
 
+                        <!-- Sin datos -->
                         <tr v-if="offices.length === 0">
-                            <td
-                                colspan="6"
-                                class="p-6 text-center text-gray-500"
-                            >
-                                No hay oficinas registradas
+                            <td colspan="7" class="px-6 py-16 text-center">
+                                <div class="flex flex-col items-center gap-3">
+                                    <div
+                                        class="flex h-14 w-14 items-center justify-center rounded-full bg-[#087ab1]/10 dark:bg-[#087ab1]/20"
+                                    >
+                                        <Building2
+                                            class="h-7 w-7 text-[#087ab1]/60"
+                                        />
+                                    </div>
+                                    <p
+                                        class="text-sm font-medium text-gray-500"
+                                    >
+                                        No hay oficinas registradas
+                                    </p>
+                                </div>
                             </td>
                         </tr>
                     </tbody>
@@ -255,44 +453,58 @@ const closeModal = () => {
 
                 <!-- PAGINACIÓN -->
                 <div
-                    v-if="paginationMeta"
-                    class="flex items-center justify-between border-t border-gray-100 bg-gray-50/60 px-6 py-4 backdrop-blur-sm"
+                    v-if="paginationMeta && paginationLinks.length > 3"
+                    class="flex items-center justify-between border-t border-gray-100 px-6 py-4 dark:border-gray-700"
                 >
-                    <div class="text-sm text-gray-600">
-                        Mostrando
-                        <span class="font-semibold text-gray-900">{{
-                            paginationMeta?.from
-                        }}</span>
-                        a
-                        <span class="font-semibold text-gray-900">{{
-                            paginationMeta?.to
-                        }}</span>
-                        de
-                        <span class="font-bold text-indigo-600">{{
-                            paginationMeta?.total
-                        }}</span>
-                        oficinas
-                    </div>
-                    <nav
-                        class="flex items-center gap-1 rounded-xl border border-gray-200 bg-white p-1 shadow-sm"
-                    >
-                        <button
-                            v-for="(link, index) in paginationLinks"
-                            :key="index"
-                            v-html="link.label"
-                            :disabled="!link.url"
-                            @click="
-                                link.url &&
-                                router.visit(link.url, { preserveScroll: true })
-                            "
-                            class="flex h-9 min-w-[36px] items-center justify-center rounded-lg px-3 text-sm font-medium transition-all duration-200"
-                            :class="[
-                                link.active
-                                    ? 'bg-indigo-600 text-white shadow-md'
-                                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900',
-                                !link.url && 'cursor-not-allowed opacity-40',
-                            ]"
-                        />
+                    <p class="text-sm text-gray-500 dark:text-gray-400">
+                        <template v-if="paginationMeta.from">
+                            Mostrando
+                            <span
+                                class="font-medium text-gray-700 dark:text-gray-300"
+                                >{{ paginationMeta.from }}</span
+                            >
+                            a
+                            <span
+                                class="font-medium text-gray-700 dark:text-gray-300"
+                                >{{ paginationMeta.to }}</span
+                            >
+                            de
+                            <span
+                                class="font-medium text-gray-700 dark:text-gray-300"
+                                >{{ paginationMeta.total }}</span
+                            >
+                            oficinas
+                        </template>
+                        <template v-else>Sin resultados</template>
+                    </p>
+                    <nav class="inline-flex gap-1">
+                        <template
+                            v-for="link in paginationLinks"
+                            :key="link.label"
+                        >
+                            <button
+                                v-if="link.url"
+                                :disabled="!link.url"
+                                @click="
+                                    link.url &&
+                                        router.visit(link.url, {
+                                            preserveScroll: true,
+                                        })
+                                "
+                                class="rounded-lg border px-3 py-1.5 text-sm font-medium transition-all"
+                                :class="
+                                    link.active && isPageNumber(link.label)
+                                        ? 'border-[#68c8fb] bg-[#68c8fb] text-white shadow-sm'
+                                        : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300 hover:bg-gray-50 hover:text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400'
+                                "
+                                v-html="translateLabel(link.label)"
+                            />
+                            <span
+                                v-else
+                                class="cursor-not-allowed rounded-lg border border-gray-100 bg-white px-3 py-1.5 text-sm font-medium text-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-600"
+                                v-html="translateLabel(link.label)"
+                            />
+                        </template>
                     </nav>
                 </div>
             </div>
@@ -308,6 +520,7 @@ const closeModal = () => {
             @close="closeModal"
             @submit="save"
         />
+
         <!-- VISOR DE FIRMA -->
         <div
             v-if="previewSignature"
@@ -315,51 +528,64 @@ const closeModal = () => {
             class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 transition"
         >
             <div
-                class="relative w-[90vw] max-w-3xl rounded-2xl bg-white p-6 shadow-2xl"
+                class="relative w-[90vw] max-w-3xl overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-black/5"
             >
-                <!-- BOTON CERRAR -->
-                <button
-                    @click="previewSignature = null"
-                    class="absolute top-4 right-4 flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 text-gray-600 transition hover:bg-gray-200"
+                <!-- HEADER -->
+                <div
+                    class="relative overflow-hidden bg-linear-to-br from-[#087ab1] to-[#68c8fb] px-6 py-5"
                 >
-                    <X class="h-4 w-4" />
-                </button>
-
-                <!-- TITULO -->
-                <div class="mb-4 text-center">
-                    <h3 class="text-lg font-semibold text-gray-800">
-                        Vista de Firma
-                    </h3>
-                    <p class="text-xs text-gray-500">
-                        Puede descargar la firma en formato PNG o JPG
-                    </p>
+                    <div
+                        class="pointer-events-none absolute -top-10 -right-10 h-40 w-40 rounded-full bg-white/8"
+                    />
+                    <div class="relative flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div
+                                class="flex h-9 w-9 items-center justify-center rounded-xl bg-white/15 ring-1 ring-white/25"
+                            >
+                                <ImageIcon class="h-4 w-4 text-white" />
+                            </div>
+                            <div>
+                                <h3 class="text-sm font-bold text-white">
+                                    Vista de Firma
+                                </h3>
+                                <p class="text-xs text-[#68c8fb]">
+                                    PNG o JPG disponible para descarga
+                                </p>
+                            </div>
+                        </div>
+                        <button
+                            @click="previewSignature = null"
+                            class="flex h-8 w-8 items-center justify-center rounded-full bg-white/15 text-white transition hover:bg-white/25"
+                        >
+                            <X class="h-4 w-4" />
+                        </button>
+                    </div>
                 </div>
 
                 <!-- IMAGEN -->
-                <div class="flex justify-center">
+                <div class="flex justify-center p-6">
                     <img
                         :src="previewSignature"
-                        class="max-h-[60vh] max-w-full rounded-lg border border-gray-200 bg-white object-contain p-2 shadow-sm"
+                        class="max-h-[55vh] max-w-full rounded-xl border border-gray-200 bg-white object-contain p-2 shadow-sm"
                     />
                 </div>
 
-                <!-- BOTONES -->
-                <div class="mt-6 flex justify-center gap-3">
-                    <!-- PNG -->
+                <!-- FOOTER -->
+                <div
+                    class="flex items-center justify-end gap-3 border-t border-gray-100 bg-gray-50/70 px-6 py-4"
+                >
                     <a
                         :href="previewSignature"
                         download="firma.png"
-                        class="flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow transition hover:bg-indigo-700"
+                        class="flex items-center gap-2 rounded-xl bg-linear-to-r from-[#087ab1] to-[#68c8fb] px-4 py-2 text-sm font-medium text-white shadow-md transition hover:from-[#066a98] hover:to-[#4fbdf5]"
                     >
                         <Download class="h-4 w-4" />
                         PNG
                     </a>
-
-                    <!-- JPG -->
                     <a
                         :href="previewSignature"
                         download="firma.jpg"
-                        class="flex items-center gap-2 rounded-lg bg-gray-700 px-4 py-2 text-sm font-medium text-white shadow transition hover:bg-gray-800"
+                        class="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-600 shadow-sm transition hover:border-gray-300 hover:bg-gray-50"
                     >
                         <ImageIcon class="h-4 w-4" />
                         JPG

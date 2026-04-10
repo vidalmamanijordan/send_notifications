@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Models\NotificationBatch;
 use App\Models\TeacherEvaluationStatus;
+use Carbon\Carbon;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -11,7 +12,6 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
-use Carbon\Carbon;
 
 class SendNotificationBatchJob implements ShouldQueue
 {
@@ -21,7 +21,9 @@ class SendNotificationBatchJob implements ShouldQueue
         SerializesModels;
 
     protected $batchId;
+
     protected $isRetry;
+
     protected $detailId;
 
     public function __construct($batchId, $isRetry = false, $detailId = null)
@@ -49,12 +51,14 @@ class SendNotificationBatchJob implements ShouldQueue
         $lines = array_map(function ($line) {
             if (preg_match('/^- .+\(Ciclo: .+, Grupo: .+\)/', $line)) {
                 $content = preg_replace('/^- /', '', $line);
+
                 return '<span style="display:inline-flex;align-items:center;gap:6px;'
-                    . 'background:#f0f7ff;border-left:3px solid #0078d4;'
-                    . 'border-radius:4px;padding:2px 8px;margin:1px 0;'
-                    . 'font-size:0.8rem;color:#0078d4;font-weight:500;">'
-                    . $content . '</span>';
+                    .'background:#f0f7ff;border-left:3px solid #0078d4;'
+                    .'border-radius:4px;padding:2px 8px;margin:1px 0;'
+                    .'font-size:0.8rem;color:#0078d4;font-weight:500;">'
+                    .$content.'</span>';
             }
+
             return $line;
         }, $lines);
 
@@ -68,7 +72,9 @@ class SendNotificationBatchJob implements ShouldQueue
         $batch = NotificationBatch::with(['details.teacher', 'office'])
             ->find($this->batchId);
 
-        if (!$batch) return;
+        if (! $batch) {
+            return;
+        }
 
         // 🔒 Si ya está completado totalmente → no hacer nada
         if ($batch->status === NotificationBatch::STATUS_COMPLETED) {
@@ -80,11 +86,11 @@ class SendNotificationBatchJob implements ShouldQueue
 
         if ($this->detailId) {
 
-            // Envío individual (inicial pendiente o reenvío fallido)
+            // Envío individual (inicial pendiente, reenvío fallido, u omitido por falta de correo)
             $details = $batch->details()
                 ->with(['teacher' => $withTeacher])
                 ->where('id', $this->detailId)
-                ->whereIn('status', ['pending', 'failed'])
+                ->whereIn('status', ['pending', 'failed', 'skipped'])
                 ->get();
 
         } elseif ($this->isRetry) {
@@ -110,8 +116,9 @@ class SendNotificationBatchJob implements ShouldQueue
 
                 $teacher = $detail->teacher;
 
-                if (!$teacher || !$teacher->email) {
+                if (! $teacher || ! $teacher->email) {
                     $detail->update(['status' => 'skipped']);
+
                     continue;
                 }
 
@@ -133,10 +140,10 @@ class SendNotificationBatchJob implements ShouldQueue
 
                 $office = $batch->office;
 
-                $htmlBody     = $this->renderBody($body);
+                $htmlBody = $this->renderBody($body);
                 $signatureUrl = null;
                 if ($office?->signature) {
-                    $path = storage_path('app/public/' . $office->signature);
+                    $path = storage_path('app/public/'.$office->signature);
                     if (file_exists($path)) {
                         $mime = mime_content_type($path);
                         $data = base64_encode(file_get_contents($path));
@@ -145,12 +152,12 @@ class SendNotificationBatchJob implements ShouldQueue
                 }
 
                 $viewData = [
-                    'subject'      => $batch->subject ?? 'Notificación de rubros vencidos',
-                    'body'         => $htmlBody,
-                    'officeName'   => $office?->name ?? '',
-                    'officeEmail'  => $office?->email ?? '',
+                    'subject' => $batch->subject ?? 'Notificación de rubros vencidos',
+                    'body' => $htmlBody,
+                    'officeName' => $office?->name ?? '',
+                    'officeEmail' => $office?->email ?? '',
                     'signatureUrl' => $signatureUrl,
-                    'sentAt'       => now()->format('d/m/Y H:i'),
+                    'sentAt' => now()->format('d/m/Y H:i'),
                 ];
 
                 $htmlContent = view('emails.notification_batch', $viewData)->render();
@@ -170,7 +177,7 @@ class SendNotificationBatchJob implements ShouldQueue
 
                 $detail->update([
                     'status' => 'sent',
-                    'sent_at' => Carbon::now()
+                    'sent_at' => Carbon::now(),
                 ]);
 
                 // Respetar límite de 1 email/seg de Mailtrap (plan gratuito)
@@ -179,25 +186,25 @@ class SendNotificationBatchJob implements ShouldQueue
             } catch (\Throwable $e) {
 
                 Log::error('SendNotificationBatchJob failed', [
-                    'batch_id'  => $this->batchId,
+                    'batch_id' => $this->batchId,
                     'detail_id' => $detail->id,
-                    'teacher'   => optional($detail->teacher)->full_name,
-                    'error'     => $e->getMessage(),
-                    'file'      => $e->getFile(),
-                    'line'      => $e->getLine(),
+                    'teacher' => optional($detail->teacher)->full_name,
+                    'error' => $e->getMessage(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
                 ]);
 
                 $detail->update([
-                    'status' => 'failed'
+                    'status' => 'failed',
                 ]);
             }
         }
 
         // 🔄 Recalcular estado del batch
-        $total   = $batch->details()->count();
-        $sent    = $batch->details()->where('status', 'sent')->count();
+        $total = $batch->details()->count();
+        $sent = $batch->details()->where('status', 'sent')->count();
         $skipped = $batch->details()->where('status', 'skipped')->count();
-        $failed  = $batch->details()->where('status', 'failed')->count();
+        $failed = $batch->details()->where('status', 'failed')->count();
         $pending = $total - $sent - $skipped - $failed;
 
         if ($pending === 0) {

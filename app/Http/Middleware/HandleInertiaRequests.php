@@ -39,8 +39,8 @@ class HandleInertiaRequests extends Middleware
             // 🔔 FLASH MESSAGES (Toastr)
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
-                'error'   => fn () => $request->session()->get('error'),
-                'info'    => fn () => $request->session()->get('info'),
+                'error' => fn () => $request->session()->get('error'),
+                'info' => fn () => $request->session()->get('info'),
                 'warning' => fn () => $request->session()->get('warning'),
             ],
 
@@ -48,15 +48,16 @@ class HandleInertiaRequests extends Middleware
 
             'quote' => [
                 'message' => trim($message),
-                'author'  => trim($author),
+                'author' => trim($author),
             ],
 
             'auth' => [
                 'user' => $request->user(),
+                'roles' => fn () => $request->user()?->getRoleNames() ?? [],
+                'permissions' => fn () => $request->user()?->getAllPermissions()->pluck('name') ?? [],
             ],
 
-            'sidebarOpen' =>
-                ! $request->hasCookie('sidebar_state')
+            'sidebarOpen' => ! $request->hasCookie('sidebar_state')
                 || $request->cookie('sidebar_state') === 'true',
 
             // ── Periodos académicos (globales) ──────────────────────────

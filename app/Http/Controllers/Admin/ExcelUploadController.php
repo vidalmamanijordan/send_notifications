@@ -6,12 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Models\AcademicPeriod;
 use App\Models\Campus;
 use App\Models\ExcelUpload;
+use App\Services\ExcelProcessorService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
-use App\Services\ExcelProcessorService;
-use Illuminate\Support\Facades\DB;
 
 class ExcelUploadController extends Controller
 {
@@ -31,20 +31,24 @@ class ExcelUploadController extends Controller
             $uploadsQuery->where('academic_period_id', $periodId);
         }
 
+        $activePeriod = AcademicPeriod::select('id', 'name')
+            ->where('status', 'active')
+            ->first();
+
         return Inertia::render('admin/excel-uploads/Index', [
-            'uploads'         => $uploadsQuery->latest()->paginate(10),
-            'academicPeriods' => AcademicPeriod::select('id', 'name')->get(),
-            'campus'          => Campus::select('id', 'name')->get(),
+            'uploads' => $uploadsQuery->latest()->paginate(10),
+            'activePeriod' => $activePeriod,
+            'campus' => Campus::select('id', 'name')->get(),
         ]);
     }
 
-
     public function store(Request $request, ExcelProcessorService $processor)
     {
+        abort_if(! auth()->user()->can('excelUploads.create'), 403);
         $validated = $request->validate([
             'academic_period_id' => 'required|exists:academic_periods,id',
-            'campus_id'          => 'required|exists:campus,id',
-            'file'               => 'required|file|mimes:xlsx,xls',
+            'campus_id' => 'required|exists:campus,id',
+            'file' => 'required|file|mimes:xlsx,xls',
         ]);
 
         DB::beginTransaction();
@@ -52,14 +56,17 @@ class ExcelUploadController extends Controller
         try {
 
             // Guardar archivo
-            $path = $request->file('file')->store('excel_uploads');
+            $file = $request->file('file');
+            $originalName = $file->getClientOriginalName();
+            $path = $file->store('excel_uploads');
 
             $upload = ExcelUpload::create([
                 'academic_period_id' => $validated['academic_period_id'],
-                'campus_id'          => $validated['campus_id'],
-                'uploaded_by'        => Auth::id(),
-                'file_path'          => $path,
-                'status'             => 'pending',
+                'campus_id' => $validated['campus_id'],
+                'uploaded_by' => Auth::id(),
+                'file_path' => $path,
+                'original_name' => $originalName,
+                'status' => 'pending',
             ]);
 
             // 🔥 PROCESAR EXCEL AUTOMÁTICAMENTE
@@ -78,9 +85,9 @@ class ExcelUploadController extends Controller
         }
     }
 
-
     public function destroy(ExcelUpload $excelUpload)
     {
+        abort_if(! auth()->user()->can('excelUploads.delete'), 403);
         if ($excelUpload->file_path && Storage::exists($excelUpload->file_path)) {
             Storage::delete($excelUpload->file_path);
         }

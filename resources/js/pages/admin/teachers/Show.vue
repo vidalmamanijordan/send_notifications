@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useSwal } from '@/composables/useSwal';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, router, useForm, usePage } from '@inertiajs/vue3';
 import {
@@ -14,8 +15,13 @@ import {
     ClipboardList,
     Edit3,
     Hash,
+    KeyRound,
+    Link2Off,
+    Lock,
     Mail,
     Save,
+    ShieldCheck,
+    UserPlus,
     UserRound,
     X,
     XCircle,
@@ -45,12 +51,21 @@ interface PaginationLink {
     active: boolean;
 }
 
+interface LinkedUser {
+    id: number;
+    name: string;
+    email: string;
+    email_verified_at: string | null;
+    roles: { id: number; name: string }[];
+}
+
 interface Teacher {
     id: number;
     dni: string;
     full_name: string;
     email: string | null;
     is_active: boolean;
+    user: LinkedUser | null;
     created_at: string;
     updated_at: string;
 }
@@ -78,6 +93,8 @@ const props = defineProps<{
     };
     stats: Stats;
     currentPeriod: { id: number; name: string; status: string } | null;
+    roles: { id: number; name: string }[];
+    canManageAccess: boolean;
 }>();
 
 /* ─────────────────────────────────────────
@@ -129,6 +146,72 @@ function save() {
         },
     });
 }
+
+/* ─────────────────────────────────────────
+   ACCESO AL SISTEMA
+───────────────────────────────────────── */
+const Swal = useSwal();
+const createForm = useForm({
+    role: '',
+});
+
+const roleForm = useForm({
+    role: props.teacher.user?.roles?.[0]?.name ?? '',
+});
+
+function createNewUser() {
+    createForm.post(route('admin.teachers.link-user', props.teacher.id));
+}
+
+function updateRole() {
+    roleForm.patch(route('admin.teachers.update-role', props.teacher.id));
+}
+
+function unlinkUser() {
+    Swal.fire({
+        title: '¿Revocar acceso?',
+        html: `Se retirará el rol de <strong>${props.teacher.user?.name}</strong> y se cerrará su sesión activa.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, revocar',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#087ab1',
+        cancelButtonColor: '#6b7280',
+        focusCancel: true,
+    }).then((result) => {
+        if (!result.isConfirmed) { return; }
+
+        Swal.fire({
+            title: '¿Estás completamente seguro?',
+            text: 'Esta acción cerrará la sesión del usuario inmediatamente y no podrá ingresar al sistema.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, confirmar revocación',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#dc2626',
+            cancelButtonColor: '#6b7280',
+            focusCancel: true,
+        }).then((second) => {
+            if (!second.isConfirmed) { return; }
+
+            roleForm.delete(route('admin.teachers.unlink-user', props.teacher.id), {
+                onSuccess: () => { roleForm.role = ''; },
+            });
+        });
+    });
+}
+
+const roleLabels: Record<string, string> = {
+    superadmin: 'Super Admin',
+    admin: 'Admin',
+    administrativo: 'Administrativo',
+};
+
+const roleBadgeClass: Record<string, string> = {
+    superadmin: 'bg-purple-100 text-purple-700 border border-purple-200',
+    admin: 'bg-indigo-100 text-indigo-700 border border-indigo-200',
+    administrativo: 'bg-sky-100 text-sky-700 border border-sky-200',
+};
 
 /* ─────────────────────────────────────────
    HELPERS
@@ -183,7 +266,7 @@ const hasEmail = computed(() => !!props.teacher.email);
     <AppLayout
         :breadcrumbs="[
             { title: 'Dashboard', href: route('dashboard') },
-            { title: 'Docentes', href: '#' },
+            { title: 'Docentes', href: route('admin.teachers.index') },
             { title: teacher.full_name, href: '#' },
         ]"
     >
@@ -476,6 +559,152 @@ const hasEmail = computed(() => !!props.teacher.email);
                                     </button>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+
+                    <!-- ── ACCESO AL SISTEMA ── -->
+                    <div v-if="canManageAccess" class="rounded-2xl border border-border bg-background shadow-sm overflow-hidden">
+                        <!-- Card header -->
+                        <div class="flex items-center gap-3 border-b border-border px-6 py-4">
+                            <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-[#087ab1]/10">
+                                <KeyRound class="h-4 w-4 text-[#087ab1]" />
+                            </div>
+                            <div>
+                                <h2 class="text-sm font-semibold text-foreground">Acceso al sistema</h2>
+                                <p class="text-xs text-muted-foreground">Cuenta y rol administrativo</p>
+                            </div>
+                        </div>
+
+                        <div class="p-6">
+
+                            <!-- ── SIN USUARIO VINCULADO ── -->
+                            <template v-if="!teacher.user">
+                                <div class="space-y-4">
+
+                                    <!-- Datos que se usarán (solo lectura) -->
+                                    <div class="space-y-2 rounded-xl border border-gray-200 bg-gray-50 p-3.5">
+                                        <div class="flex items-center gap-2 text-xs text-gray-500">
+                                            <UserRound class="h-3.5 w-3.5 text-[#68c8fb]" />
+                                            <span class="font-medium uppercase tracking-wide">Usuario:</span>
+                                            <span class="truncate font-semibold text-gray-700">{{ teacher.full_name }}</span>
+                                        </div>
+                                        <div class="flex items-center gap-2 text-xs text-gray-500">
+                                            <Mail class="h-3.5 w-3.5 text-[#68c8fb]" />
+                                            <span class="font-medium uppercase tracking-wide">Correo:</span>
+                                            <span class="truncate font-semibold text-gray-700">{{ teacher.email ?? '—' }}</span>
+                                        </div>
+                                        <div class="flex items-center gap-2 text-xs text-gray-500">
+                                            <Lock class="h-3.5 w-3.5 text-[#68c8fb]" />
+                                            <span class="font-medium uppercase tracking-wide">Contraseña:</span>
+                                            <span class="font-semibold text-gray-700">{{ teacher.dni }}</span>
+                                            <span class="ml-auto shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-700">DNI</span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Aviso sin correo -->
+                                    <div v-if="!teacher.email" class="flex items-center gap-2.5 rounded-xl border border-red-200 bg-red-50 px-3.5 py-2.5">
+                                        <XCircle class="h-4 w-4 shrink-0 text-red-500" />
+                                        <p class="text-xs text-red-600">Sin correo registrado. Añádelo en "Editar datos" primero.</p>
+                                    </div>
+
+                                    <!-- Selector de rol -->
+                                    <div class="space-y-1.5">
+                                        <label class="flex items-center gap-1.5 text-xs font-semibold tracking-wide text-gray-500 uppercase">
+                                            <ShieldCheck class="h-3.5 w-3.5 text-[#68c8fb]" />
+                                            Rol del sistema
+                                        </label>
+                                        <select
+                                            v-model="createForm.role"
+                                            class="w-full appearance-none rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5 text-sm text-gray-900 transition-all focus:border-[#087ab1] focus:bg-white focus:ring-2 focus:ring-[#68c8fb]/20 focus:outline-none"
+                                            :class="{ 'border-red-300 bg-red-50': createForm.errors.role }"
+                                        >
+                                            <option value="" disabled>Seleccionar rol...</option>
+                                            <option v-for="r in roles" :key="r.id" :value="r.name">
+                                                {{ roleLabels[r.name] ?? r.name }}
+                                            </option>
+                                        </select>
+                                        <p v-if="createForm.errors.role" class="text-xs text-red-500">{{ createForm.errors.role }}</p>
+                                    </div>
+
+                                    <button
+                                        @click="createNewUser"
+                                        :disabled="createForm.processing || !teacher.email"
+                                        class="flex w-full items-center justify-center gap-2 rounded-xl bg-linear-to-r from-[#087ab1] to-[#68c8fb] px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-[#087ab1]/30 transition-all hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                                    >
+                                        <svg v-if="createForm.processing" class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                                        </svg>
+                                        <UserPlus v-else class="h-3.5 w-3.5" />
+                                        {{ createForm.processing ? 'Asignando...' : 'Asignar acceso al sistema' }}
+                                    </button>
+                                </div>
+                            </template>
+
+                            <!-- ── CON USUARIO VINCULADO ── -->
+                            <template v-else>
+                                <!-- Info del usuario -->
+                                <div class="mb-4 flex items-center gap-3 rounded-xl border border-[#087ab1]/20 bg-[#087ab1]/5 px-4 py-3">
+                                    <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#087ab1]/10 text-xs font-bold text-[#087ab1]">
+                                        {{ teacher.user.name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase() }}
+                                    </div>
+                                    <div class="min-w-0 flex-1">
+                                        <p class="text-sm font-semibold text-gray-800 dark:text-gray-100">{{ teacher.user.name }}</p>
+                                        <p class="truncate text-xs text-gray-500">{{ teacher.user.email }}</p>
+                                    </div>
+                                    <span
+                                        v-if="teacher.user.roles?.length"
+                                        class="inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium"
+                                        :class="roleBadgeClass[teacher.user.roles[0].name] ?? 'bg-gray-100 text-gray-600'"
+                                    >
+                                        <ShieldCheck class="h-2.5 w-2.5" />
+                                        {{ roleLabels[teacher.user.roles[0].name] ?? teacher.user.roles[0].name }}
+                                    </span>
+                                </div>
+
+                                <!-- Cambiar rol -->
+                                <div class="space-y-1.5">
+                                    <label class="flex items-center gap-1.5 text-xs font-semibold tracking-wide text-gray-500 uppercase">
+                                        <ShieldCheck class="h-3.5 w-3.5 text-[#68c8fb]" />
+                                        Cambiar rol
+                                    </label>
+                                    <div class="flex gap-2">
+                                        <select
+                                            v-model="roleForm.role"
+                                            class="flex-1 appearance-none rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5 text-sm text-gray-900 transition-all focus:border-[#087ab1] focus:bg-white focus:ring-2 focus:ring-[#68c8fb]/20 focus:outline-none"
+                                        >
+                                            <option v-for="r in roles" :key="r.id" :value="r.name">
+                                                {{ roleLabels[r.name] ?? r.name }}
+                                            </option>
+                                        </select>
+                                        <button
+                                            @click="updateRole"
+                                            :disabled="roleForm.processing"
+                                            class="flex items-center gap-2 rounded-xl bg-linear-to-r from-[#087ab1] to-[#68c8fb] px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-[#087ab1]/30 transition-all hover:opacity-90 disabled:opacity-60"
+                                        >
+                                            <svg v-if="roleForm.processing" class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+                                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                                            </svg>
+                                            <Save v-else class="h-3.5 w-3.5" />
+                                        </button>
+                                    </div>
+                                    <p v-if="roleForm.errors.role" class="text-xs text-red-500">{{ roleForm.errors.role }}</p>
+                                </div>
+
+                                <!-- Desvincular -->
+                                <div class="mt-4 border-t border-gray-100 pt-4">
+                                    <button
+                                        @click="unlinkUser"
+                                        :disabled="roleForm.processing"
+                                        class="flex w-full items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-medium text-red-600 transition hover:bg-red-100 disabled:opacity-60"
+                                    >
+                                        <Link2Off class="h-3.5 w-3.5" />
+                                        Desvincular usuario
+                                    </button>
+                                </div>
+                            </template>
+
                         </div>
                     </div>
 

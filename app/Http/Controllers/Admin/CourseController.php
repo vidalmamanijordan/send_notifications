@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Course;
-use Inertia\Inertia;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class CourseController extends Controller
 {
@@ -23,9 +23,10 @@ class CourseController extends Controller
 
     public function store(Request $request)
     {
+        abort_if(! auth()->user()->can('courses.create'), 403);
         $validated = $request->validate([
-            'name'    => 'required|string|max:150',
-            'code'    => 'required|string|max:20|unique:courses,code',
+            'name' => 'required|string|max:150',
+            'code' => 'required|string|max:20|unique:courses,code',
             'credits' => 'required|integer|min:1|max:20',
         ]);
 
@@ -38,9 +39,10 @@ class CourseController extends Controller
 
     public function update(Request $request, Course $course)
     {
+        abort_if(! auth()->user()->can('courses.update'), 403);
         $validated = $request->validate([
-            'name'    => 'required|string|max:150',
-            'code'    => 'required|string|max:20|unique:courses,code,' . $course->id,
+            'name' => 'required|string|max:150',
+            'code' => 'required|string|max:20|unique:courses,code,'.$course->id,
             'credits' => 'required|integer|min:1|max:20',
         ]);
 
@@ -53,6 +55,7 @@ class CourseController extends Controller
 
     public function destroy(Course $course)
     {
+        abort_if(! auth()->user()->can('courses.delete'), 403);
         $course->delete();
 
         return redirect()

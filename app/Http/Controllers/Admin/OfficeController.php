@@ -18,7 +18,7 @@ class OfficeController extends Controller
         return Inertia::render('admin/offices/Index', [
             'offices' => Office::withCount('notificationBatches')
                 ->orderBy('id', 'desc')
-                ->paginate(10)
+                ->paginate(10),
         ]);
     }
 
@@ -27,6 +27,7 @@ class OfficeController extends Controller
      */
     public function store(Request $request)
     {
+        abort_if(! auth()->user()->can('offices.create'), 403);
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'code' => 'required|string|max:255|unique:offices,code',
@@ -55,9 +56,10 @@ class OfficeController extends Controller
      */
     public function update(Request $request, Office $office)
     {
+        abort_if(! auth()->user()->can('offices.update'), 403);
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'code' => 'required|string|max:255|unique:offices,code,' . $office->id,
+            'code' => 'required|string|max:255|unique:offices,code,'.$office->id,
             'email' => 'required|email|max:255',
             'cc_email' => 'nullable|email|max:255',
             'level' => 'required|integer|min:1',
@@ -90,10 +92,11 @@ class OfficeController extends Controller
      */
     public function destroy(Office $office)
     {
+        abort_if(! auth()->user()->can('offices.delete'), 403);
         // Protección: no permitir eliminar si tiene lotes asociados
         if ($office->notificationBatches()->exists()) {
             return back()->withErrors([
-                'error' => 'No se puede eliminar una oficina que tiene lotes asociados.'
+                'error' => 'No se puede eliminar una oficina que tiene lotes asociados.',
             ]);
         }
 

@@ -17,28 +17,48 @@
 
                     {{-- HEADER --}}
                     <tr>
-                        <td style="background:linear-gradient(135deg,#2596be,#1a7a9e);padding:24px 28px;">
+                        <td style="padding:0;background-color:#003765;background-image:linear-gradient(135deg,#020c1b 0%,#003765 45%,#0e6ba8 100%);">
+
+                            {{-- Acento dorado superior --}}
+                            <table width="100%" cellpadding="0" cellspacing="0"><tr>
+                                <td style="background-image:linear-gradient(90deg,#f8a900,#ffd166,#f8a900);height:3px;font-size:0;line-height:0;">&nbsp;</td>
+                            </tr></table>
+
+                            {{-- Contenido --}}
                             <table width="100%" cellpadding="0" cellspacing="0">
                                 <tr>
-                                    <td>
-                                        <p
-                                            style="margin:0;font-size:11px;font-weight:600;color:rgba(255,255,255,0.75);letter-spacing:0.5px;text-transform:uppercase;">
+                                    <td align="center" style="padding:38px 48px 34px;">
+
+                                        {{-- Label institución --}}
+                                        <p style="margin:0 0 4px;font-size:8px;font-weight:700;color:rgba(248,169,0,0.75);letter-spacing:4px;text-transform:uppercase;font-family:Arial,sans-serif;">
                                             Universidad Peruana Unión
                                         </p>
-                                        <p style="margin:4px 0 0;font-size:16px;font-weight:700;color:#ffffff;">
+
+                                        {{-- Nombre de la oficina --}}
+                                        <p style="margin:0 0 6px;font-size:22px;font-weight:300;color:#ffffff;letter-spacing:0.8px;line-height:1.3;font-family:Arial,sans-serif;">
                                             {{ $officeName }}
                                         </p>
-                                        <p style="margin:4px 0 0;font-size:12px;color:rgba(255,255,255,0.8);">
+
+                                        {{-- Línea decorativa dorada --}}
+                                        <table cellpadding="0" cellspacing="0" style="margin:10px auto 12px;">
+                                            <tr>
+                                                <td width="16" style="background-color:rgba(248,169,0,0.35);height:1px;font-size:0;vertical-align:middle;">&nbsp;</td>
+                                                <td style="padding:0 5px;font-size:0;vertical-align:middle;">
+                                                    <div style="width:4px;height:4px;background-color:#f8a900;border-radius:50%;margin-top:-1px;">&nbsp;</div>
+                                                </td>
+                                                <td width="16" style="background-color:rgba(248,169,0,0.35);height:1px;font-size:0;vertical-align:middle;">&nbsp;</td>
+                                            </tr>
+                                        </table>
+
+                                        {{-- Correo --}}
+                                        <p style="margin:0;font-size:11px;color:rgba(255,255,255,0.45);letter-spacing:0.8px;font-family:Arial,sans-serif;">
                                             {{ $officeEmail }}
                                         </p>
-                                    </td>
-                                    <td align="right" style="vertical-align:top;">
-                                        <p style="margin:0;font-size:11px;color:rgba(255,255,255,0.7);">
-                                            {{ $sentAt }}
-                                        </p>
+
                                     </td>
                                 </tr>
                             </table>
+
                         </td>
                     </tr>
 

@@ -6,8 +6,18 @@ import OfficeAssignModal from '@/components/notifications/OfficeAssignModal.vue'
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, router } from '@inertiajs/vue3';
 import axios from 'axios';
-import { Building2, Eye, FileText, Mail, Wand2 } from 'lucide-vue-next';
-import { ref, watch } from 'vue';
+import {
+    Bell,
+    Building2,
+    Eraser,
+    Eye,
+    FileText,
+    Filter,
+    Mail,
+    Wand2,
+    X,
+} from 'lucide-vue-next';
+import { computed, ref, watch } from 'vue';
 
 /* =========================
    TYPES
@@ -74,7 +84,6 @@ const props = defineProps<{
 /* =========================
    AUTO REFRESH (PROCESSING)
 ========================= */
-
 const hasProcessing = () => {
     return (props.batches?.data ?? []).some((b) => b.status === 'processing');
 };
@@ -109,6 +118,12 @@ const clearFilters = () => {
         },
     );
 };
+
+const hasActiveFilters = computed(() =>
+    !!filters.value.academic_period_id ||
+    !!filters.value.campus_id ||
+    !!filters.value.status,
+);
 
 /* =========================
    STATUS TRANSLATION
@@ -219,12 +234,9 @@ const currentBatchPage = ref(1);
    MODAL PREVIEW EMAIL
 ========================= */
 const showPreviewModal = ref(false);
+const previewBatchId = ref<number | null>(null);
 const previewSubject = ref('');
-const previewBody = ref('');
-const previewOfficeName = ref('');
-const previewOfficeEmail = ref('');
-const previewOfficeSignature = ref('');
-const previewDate = ref('');
+const previewHtml = ref('');
 const previewEmails = ref<string[]>([]);
 const previewTeachers = ref<any[]>([]);
 
@@ -239,14 +251,11 @@ watch(
 
         if (!updated) return;
 
-        // Si sigue procesando solo sincroniza estado
         if (updated.status === 'processing') {
             selectedBatch.value.status = updated.status;
             return;
         }
 
-        // Si terminó, recarga el batch completo
-        // Si terminó, recarga el batch completo respetando página actual
         const response = await axios.get(
             route('admin.notification-batches.show', updated.id),
             {
@@ -279,15 +288,10 @@ const previewEmail = async (item: NotificationBatch) => {
         );
 
         previewSubject.value = response.data.subject;
-        previewBody.value = response.data.body;
+        previewHtml.value = response.data.html;
         previewEmails.value = response.data.emails ?? [];
         previewTeachers.value = response.data.teachers ?? [];
-
-        previewOfficeName.value = item.office?.name ?? '';
-        previewOfficeEmail.value = item.office?.email ?? '';
-        previewOfficeSignature.value = item.office?.signature ?? '';
-
-        previewDate.value = item.execution_date;
+        previewBatchId.value = item.id;
 
         showPreviewModal.value = true;
     } catch (error) {
@@ -363,10 +367,9 @@ const sendNotifications = async () => {
             {
                 preserveScroll: true,
                 preserveState: true,
-                replace: true, // evita que cambie historial
+                replace: true,
 
                 onSuccess: async () => {
-                    // Recargar SOLO batches respetando filtros y página actual
                     router.get(
                         route('admin.notification-batches.index'),
                         filters.value,
@@ -378,7 +381,6 @@ const sendNotifications = async () => {
                         },
                     );
 
-                    // 👇 También refresca el modal
                     const response = await axios.get(
                         route(
                             'admin.notification-batches.show',
@@ -413,7 +415,7 @@ const resendNotification = async (detailId: number) => {
             {
                 preserveScroll: true,
                 preserveState: true,
-                replace: true, // evita el micro cambio de historial
+                replace: true,
 
                 onSuccess: async () => {
                     const response = await axios.get(
@@ -440,223 +442,415 @@ const resendNotification = async (detailId: number) => {
     <Head title="Lotes de Notificación" />
 
     <AppLayout>
-        <div class="space-y-6 p-6">
+        <div class="space-y-6 px-6 py-6">
             <!-- HEADER -->
-            <div>
-                <h1 class="text-xl font-semibold">Lotes de Notificación</h1>
-                <p class="text-sm text-gray-500">
-                    Gestión de los lotes generados en el sistema.
-                </p>
+            <div
+                class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
+            >
+                <div class="flex items-center gap-3">
+                    <div
+                        class="flex h-10 w-10 items-center justify-center rounded-xl bg-[#087ab1] shadow-md"
+                    >
+                        <Bell class="h-5 w-5 text-white" />
+                    </div>
+                    <div>
+                        <h1
+                            class="text-xl font-bold text-gray-900 dark:text-gray-100"
+                        >
+                            Lotes de Notificación
+                        </h1>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">
+                            {{ props.batches?.data.length ?? 0 }}
+                            lote{{
+                                (props.batches?.data.length ?? 0) !== 1
+                                    ? 's'
+                                    : ''
+                            }}
+                            generado{{
+                                (props.batches?.data.length ?? 0) !== 1
+                                    ? 's'
+                                    : ''
+                            }}
+                        </p>
+                    </div>
+                </div>
             </div>
 
             <!-- FILTROS -->
             <div
-                class="flex flex-wrap items-center gap-3 rounded-lg border bg-gray-50 p-4"
+                class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-900"
             >
-                <select
-                    v-model="filters.academic_period_id"
-                    class="rounded border px-3 py-2 text-sm"
+                <div
+                    class="flex items-center gap-2 border-b border-gray-100 bg-linear-to-r from-gray-50 to-gray-100 px-5 py-3 dark:border-gray-700 dark:from-gray-800 dark:to-gray-800"
                 >
-                    <option value="">Periodo académico</option>
-                    <option
-                        v-for="p in academicPeriods"
-                        :key="p.id"
-                        :value="p.id"
+                    <Filter class="h-3.5 w-3.5 text-[#087ab1]" />
+                    <span
+                        class="text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
+                        >Filtros</span
                     >
-                        {{ p.name }}
-                    </option>
-                </select>
+                </div>
 
-                <select
-                    v-model="filters.campus_id"
-                    class="rounded border px-3 py-2 text-sm"
-                >
-                    <option value="">Campus</option>
-                    <option v-for="c in campus" :key="c.id" :value="c.id">
-                        {{ c.name }}
-                    </option>
-                </select>
+                <div class="flex flex-wrap items-center gap-3 px-5 py-4">
+                    <select
+                        v-model="filters.academic_period_id"
+                        class="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700 transition focus:border-[#087ab1] focus:bg-white focus:ring-2 focus:ring-[#68c8fb]/20 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
+                    >
+                        <option value="">Periodo académico</option>
+                        <option
+                            v-for="p in academicPeriods"
+                            :key="p.id"
+                            :value="p.id"
+                        >
+                            {{ p.name }}
+                        </option>
+                    </select>
 
-                <select
-                    v-model="filters.status"
-                    class="rounded border px-3 py-2 text-sm"
-                >
-                    <option value="">Estado</option>
-                    <option value="draft">Borrador</option>
-                    <option value="active">Activo</option>
-                    <option value="processing">Procesando</option>
-                    <option value="completed">Completado</option>
-                    <option value="completed_with_errors">
-                        Completado con errores
-                    </option>
-                    <option value="failed">Fallido</option>
-                </select>
+                    <select
+                        v-model="filters.campus_id"
+                        class="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700 transition focus:border-[#087ab1] focus:bg-white focus:ring-2 focus:ring-[#68c8fb]/20 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
+                    >
+                        <option value="">Campus</option>
+                        <option v-for="c in campus" :key="c.id" :value="c.id">
+                            {{ c.name }}
+                        </option>
+                    </select>
 
-                <button
-                    @click="applyFilters"
-                    class="rounded-lg bg-indigo-600 px-4 py-2 text-sm text-white shadow transition hover:bg-indigo-700"
-                >
-                    Filtrar
-                </button>
+                    <select
+                        v-model="filters.status"
+                        class="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700 transition focus:border-[#087ab1] focus:bg-white focus:ring-2 focus:ring-[#68c8fb]/20 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
+                    >
+                        <option value="">Estado</option>
+                        <option value="draft">Borrador</option>
+                        <option value="active">Activo</option>
+                        <option value="processing">Procesando</option>
+                        <option value="completed">Completado</option>
+                        <option value="completed_with_errors">
+                            Completado con errores
+                        </option>
+                        <option value="failed">Fallido</option>
+                    </select>
 
-                <button
-                    @click="clearFilters"
-                    class="rounded-lg bg-gray-400 px-4 py-2 text-sm text-white shadow transition hover:bg-gray-500"
-                >
-                    Limpiar
-                </button>
+                    <button
+                        @click="applyFilters"
+                        class="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-linear-to-r from-[#087ab1] to-[#68c8fb] px-4 py-2 text-sm font-medium text-white shadow-md transition hover:from-[#066a98] hover:to-[#4fbdf5] active:scale-95"
+                    >
+                        <Filter class="h-3.5 w-3.5" />
+                        Filtrar
+                    </button>
+
+                    <button
+                        v-if="hasActiveFilters"
+                        @click="clearFilters"
+                        class="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-600 shadow-sm transition hover:border-red-200 hover:bg-red-50 hover:text-red-500 active:scale-95"
+                    >
+                        <Eraser class="h-3.5 w-3.5" />
+                        Limpiar
+                    </button>
+                </div>
             </div>
 
             <!-- TABLA -->
-            <div class="overflow-x-auto rounded-xl bg-white shadow">
-                <table class="min-w-full text-sm">
-                    <thead class="bg-gray-100">
-                        <tr>
-                            <th class="p-3 text-left">#</th>
-                            <th class="p-3 text-left">Nombre</th>
-                            <th class="p-3 text-left">Periodo</th>
-                            <th class="p-3 text-left">Campus</th>
-                            <th class="p-3 text-left">Fecha ejecución</th>
-                            <th class="p-3 text-left">Plantilla</th>
-                            <th class="p-3 text-left">Oficina</th>
-                            <th class="p-3 text-left">Estado</th>
-                            <th class="p-3 text-center">Acciones</th>
-                        </tr>
-                    </thead>
-
-                    <tbody>
-                        <tr
-                            v-for="(item, index) in props.batches?.data ?? []"
-                            :key="item.id"
-                            class="border-t transition hover:bg-gray-50"
-                        >
-                            <td class="p-3">{{ index + 1 }}</td>
-                            <td class="p-3 font-medium">{{ item.name }}</td>
-                            <td class="p-3">
-                                {{ item.academic_period?.name ?? '-' }}
-                            </td>
-                            <td class="p-3">{{ item.campus?.name ?? '-' }}</td>
-
-                            <td class="p-3 text-gray-500">
-                                {{ formatDateTime(item.execution_date) }}
-                            </td>
-
-                            <td class="p-3">
-                                <span
-                                    class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold"
-                                    :class="
-                                        templateClasses(
-                                            !!item.notification_template_id,
-                                        )
-                                    "
-                                >
-                                    {{
-                                        item.notification_template_id
-                                            ? 'Asignada'
-                                            : 'Sin plantilla'
-                                    }}
-                                </span>
-                            </td>
-                            <!-- OFICINA -->
-                            <td class="p-3">
-                                <div
-                                    v-if="item.office"
-                                    class="flex items-center gap-3"
-                                >
-                                    <!-- ICONO -->
-                                    <div
-                                        class="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-100 text-indigo-600"
-                                    >
-                                        <Building2 class="h-4 w-4" />
-                                    </div>
-
-                                    <!-- INFO -->
-                                    <div class="flex flex-col leading-tight">
-                                        <span
-                                            class="text-sm font-medium text-gray-800"
-                                        >
-                                            {{ item.office.name }}
-                                        </span>
-
-                                        <span class="text-xs text-gray-500">
-                                            {{ item.office.email }}
-                                        </span>
-                                    </div>
-                                </div>
-
-                                <!-- SIN OFICINA -->
-                                <div
-                                    v-else
-                                    class="flex items-center gap-2 text-gray-400"
-                                >
-                                    <Building2 class="h-4 w-4" />
-
-                                    <span class="text-xs italic">
-                                        Sin oficina asignada
-                                    </span>
-                                </div>
-                            </td>
-
-                            <td class="p-3">
-                                <span
-                                    class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold"
-                                    :class="statusClasses(item.status)"
-                                >
-                                    {{ translateStatus(item.status) }}
-                                </span>
-                            </td>
-
-                            <td class="p-3">
-                                <div class="flex justify-center gap-2">
-                                    <!-- ENLAZAR PLANTILLA -->
-                                    <button
-                                        @click="openAttachTemplate(item)"
-                                        class="flex h-9 w-9 items-center justify-center rounded-full text-fuchsia-600 transition hover:bg-fuchsia-600 hover:text-white"
-                                    >
-                                        <FileText class="h-4 w-4" />
-                                    </button>
-
-                                    <!-- ASIGNAR OFICINA -->
-                                    <button
-                                        @click="openOfficeModal(item)"
-                                        class="flex h-9 w-9 items-center justify-center rounded-full text-red-600 transition hover:bg-red-600 hover:text-white"
-                                    >
-                                        <Mail class="h-4 w-4" />
-                                    </button>
-
-                                    <!-- ORQUESTADOR -->
-                                    <button
-                                        @click="openBatch(item.id)"
-                                        class="flex h-9 w-9 items-center justify-center rounded-full text-indigo-600 transition hover:bg-indigo-600 hover:text-white"
-                                    >
-                                        <Wand2 class="h-4 w-4" />
-                                    </button>
-
-                                    <!-- PREVIEW EMAIL -->
-                                    <button
-                                        @click="previewEmail(item)"
-                                        class="flex h-9 w-9 items-center justify-center rounded-full text-indigo-600 transition hover:bg-indigo-600 hover:text-white"
-                                    >
-                                        <Eye class="h-4 w-4" />
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-
-                        <tr v-if="(props.batches?.data ?? []).length === 0">
-                            <td
-                                colspan="8"
-                                class="p-6 text-center text-gray-500"
+            <div
+                class="rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-900"
+            >
+                <div class="overflow-x-auto">
+                    <table
+                        class="min-w-full divide-y divide-gray-100 dark:divide-gray-700"
+                    >
+                        <thead>
+                            <tr
+                                class="bg-linear-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-800"
                             >
-                                No hay lotes generados
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+                                <th
+                                    class="px-5 py-3.5 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
+                                >
+                                    #
+                                </th>
+                                <th
+                                    class="px-5 py-3.5 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
+                                >
+                                    Nombre
+                                </th>
+                                <th
+                                    class="hidden px-5 py-3.5 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase md:table-cell dark:text-gray-400"
+                                >
+                                    Periodo
+                                </th>
+                                <th
+                                    class="hidden px-5 py-3.5 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase lg:table-cell dark:text-gray-400"
+                                >
+                                    Campus
+                                </th>
+                                <th
+                                    class="hidden px-5 py-3.5 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase xl:table-cell dark:text-gray-400"
+                                >
+                                    Fecha ejecución
+                                </th>
+                                <th
+                                    class="hidden px-5 py-3.5 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase sm:table-cell dark:text-gray-400"
+                                >
+                                    Plantilla
+                                </th>
+                                <th
+                                    class="hidden px-5 py-3.5 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase md:table-cell dark:text-gray-400"
+                                >
+                                    Oficina
+                                </th>
+                                <th
+                                    class="px-5 py-3.5 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
+                                >
+                                    Estado
+                                </th>
+                                <th
+                                    class="px-5 py-3.5 text-right text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
+                                >
+                                    Acciones
+                                </th>
+                            </tr>
+                        </thead>
+
+                        <tbody
+                            class="divide-y divide-gray-100 dark:divide-gray-700/60"
+                        >
+                            <tr
+                                v-for="(item, index) in props.batches?.data ??
+                                []"
+                                :key="item.id"
+                                class="group transition-all duration-150 hover:bg-[#68c8fb]/2 hover:shadow-[inset_3px_0_0_#087ab1] dark:hover:bg-[#68c8fb]/10 dark:hover:shadow-[inset_3px_0_0_#68c8fb]"
+                            >
+                                <!-- # -->
+                                <td
+                                    class="px-5 py-3.5 text-sm text-gray-400 dark:text-gray-500"
+                                >
+                                    {{ index + 1 }}
+                                </td>
+
+                                <!-- Nombre -->
+                                <td class="px-5 py-3.5">
+                                    <div class="flex items-center gap-2.5">
+                                        <div
+                                            class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#087ab1]/10"
+                                        >
+                                            <Bell
+                                                class="h-4 w-4 text-[#087ab1]"
+                                            />
+                                        </div>
+                                        <span
+                                            class="text-sm font-semibold text-gray-800 dark:text-gray-100"
+                                        >
+                                            {{ item.name }}
+                                        </span>
+                                    </div>
+                                </td>
+
+                                <!-- Periodo -->
+                                <td class="hidden px-5 py-3.5 md:table-cell">
+                                    <span
+                                        class="text-sm text-gray-600 dark:text-gray-300"
+                                    >
+                                        {{ item.academic_period?.name ?? '-' }}
+                                    </span>
+                                </td>
+
+                                <!-- Campus -->
+                                <td class="hidden px-5 py-3.5 lg:table-cell">
+                                    <span
+                                        class="text-sm text-gray-600 dark:text-gray-300"
+                                    >
+                                        {{ item.campus?.name ?? '-' }}
+                                    </span>
+                                </td>
+
+                                <!-- Fecha -->
+                                <td class="hidden px-5 py-3.5 xl:table-cell">
+                                    <span
+                                        class="text-sm text-gray-500 dark:text-gray-400"
+                                    >
+                                        {{
+                                            formatDateTime(item.execution_date)
+                                        }}
+                                    </span>
+                                </td>
+
+                                <!-- Plantilla -->
+                                <td class="hidden px-5 py-3.5 sm:table-cell">
+                                    <span
+                                        class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium"
+                                        :class="
+                                            templateClasses(
+                                                !!item.notification_template_id,
+                                            )
+                                        "
+                                    >
+                                        <span
+                                            class="h-1.5 w-1.5 rounded-full"
+                                            :class="
+                                                item.notification_template_id
+                                                    ? 'bg-emerald-500'
+                                                    : 'bg-gray-400'
+                                            "
+                                        />
+                                        {{
+                                            item.notification_template_id
+                                                ? 'Asignada'
+                                                : 'Sin plantilla'
+                                        }}
+                                    </span>
+                                </td>
+
+                                <!-- Oficina -->
+                                <td class="hidden px-5 py-3.5 md:table-cell">
+                                    <div
+                                        v-if="item.office"
+                                        class="flex items-center gap-2.5"
+                                    >
+                                        <div
+                                            class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#087ab1]/10"
+                                        >
+                                            <Building2
+                                                class="h-4 w-4 text-[#087ab1]"
+                                            />
+                                        </div>
+                                        <div
+                                            class="flex flex-col leading-tight"
+                                        >
+                                            <span
+                                                class="text-sm font-medium text-gray-800 dark:text-gray-100"
+                                            >
+                                                {{ item.office.name }}
+                                            </span>
+                                            <span
+                                                class="text-xs text-gray-500 dark:text-gray-400"
+                                            >
+                                                {{ item.office.email }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div
+                                        v-else
+                                        class="flex items-center gap-1.5 text-gray-400"
+                                    >
+                                        <Building2 class="h-3.5 w-3.5" />
+                                        <span class="text-xs italic">
+                                            Sin oficina
+                                        </span>
+                                    </div>
+                                </td>
+
+                                <!-- Estado -->
+                                <td class="px-5 py-3.5">
+                                    <span
+                                        class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold"
+                                        :class="statusClasses(item.status)"
+                                    >
+                                        {{ translateStatus(item.status) }}
+                                    </span>
+                                </td>
+
+                                <!-- Acciones -->
+                                <td class="px-5 py-3.5 text-right">
+                                    <div
+                                        class="flex items-center justify-end gap-1"
+                                    >
+                                        <!-- ENLAZAR PLANTILLA -->
+                                        <button
+                                            @click="openAttachTemplate(item)"
+                                            title="Enlazar plantilla"
+                                            :class="[
+                                                'flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-white transition-all duration-200',
+                                                showAttachModal && selectedBatchId === item.id
+                                                    ? 'scale-110 bg-red-500 ring-2 ring-red-400/50 ring-offset-1'
+                                                    : 'bg-red-400/80 hover:bg-red-500',
+                                            ]"
+                                        >
+                                            <FileText
+                                                class="h-3.5 w-3.5"
+                                                :class="showAttachModal && selectedBatchId === item.id ? 'animate-spin' : ''"
+                                            />
+                                        </button>
+
+                                        <!-- ASIGNAR OFICINA -->
+                                        <button
+                                            @click="openOfficeModal(item)"
+                                            title="Asignar oficina"
+                                            :class="[
+                                                'flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-white transition-all duration-200',
+                                                showOfficeModal && selectedOfficeBatch === item.id
+                                                    ? 'scale-110 bg-yellow-500 ring-2 ring-yellow-400/50 ring-offset-1'
+                                                    : 'bg-yellow-400/80 hover:bg-yellow-500',
+                                            ]"
+                                        >
+                                            <Mail
+                                                class="h-3.5 w-3.5"
+                                                :class="showOfficeModal && selectedOfficeBatch === item.id ? 'animate-spin' : ''"
+                                            />
+                                        </button>
+
+                                        <!-- PREVIEW EMAIL -->
+                                        <button
+                                            @click="previewEmail(item)"
+                                            title="Vista previa del correo"
+                                            :class="[
+                                                'flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-white transition-all duration-200',
+                                                showPreviewModal && previewBatchId === item.id
+                                                    ? 'scale-110 bg-green-500 ring-2 ring-green-400/50 ring-offset-1'
+                                                    : 'bg-green-400/80 hover:bg-green-500',
+                                            ]"
+                                        >
+                                            <Eye
+                                                class="h-3.5 w-3.5"
+                                                :class="showPreviewModal && previewBatchId === item.id ? 'animate-spin' : ''"
+                                            />
+                                        </button>
+
+                                        <!-- ORQUESTADOR -->
+                                        <button
+                                            @click="openBatch(item.id)"
+                                            title="Ver detalle del lote"
+                                            :class="[
+                                                'flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-white transition-all duration-200',
+                                                showModal && selectedBatch?.id === item.id
+                                                    ? 'scale-110 bg-[#087ab1] ring-2 ring-[#087ab1]/50 ring-offset-1'
+                                                    : 'bg-[#087ab1]/80 hover:bg-[#087ab1]',
+                                            ]"
+                                        >
+                                            <Wand2
+                                                class="h-3.5 w-3.5"
+                                                :class="showModal && selectedBatch?.id === item.id ? 'animate-spin' : ''"
+                                            />
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+
+                            <!-- Sin datos -->
+                            <tr v-if="(props.batches?.data ?? []).length === 0">
+                                <td colspan="9" class="px-6 py-16 text-center">
+                                    <div
+                                        class="flex flex-col items-center gap-3"
+                                    >
+                                        <div
+                                            class="flex h-14 w-14 items-center justify-center rounded-full bg-[#087ab1]/10 dark:bg-[#087ab1]/20"
+                                        >
+                                            <Bell
+                                                class="h-7 w-7 text-[#087ab1]/60"
+                                            />
+                                        </div>
+                                        <p
+                                            class="text-sm font-medium text-gray-500"
+                                        >
+                                            No hay lotes generados
+                                        </p>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
-        <!-- MODAL ORIGINAL -->
+        <!-- MODAL LOTE -->
         <NotificationBatchModal
             :show="showModal"
             :batch="selectedBatch"
@@ -666,7 +860,7 @@ const resendNotification = async (detailId: number) => {
             @resend="resendNotification"
         />
 
-        <!-- MODAL NUEVO -->
+        <!-- MODAL ENLAZAR PLANTILLA -->
         <AttachTemplateModal
             :show="showAttachModal"
             :batch-id="selectedBatchId"
@@ -682,18 +876,15 @@ const resendNotification = async (detailId: number) => {
             :current-office-id="selectedOfficeId"
             @close="showOfficeModal = false"
         />
+
         <!-- MODAL EMAIL PREVIEW -->
         <EmailPreviewModal
             :show="showPreviewModal"
             :subject="previewSubject"
-            :body="previewBody"
+            :html="previewHtml"
             :emails="previewEmails"
             :teachers="previewTeachers"
-            :officeName="previewOfficeName"
-            :officeEmail="previewOfficeEmail"
-            :officeSignature="previewOfficeSignature"
-            :sentAt="previewDate"
-            @close="showPreviewModal = false"
+            @close="showPreviewModal = false; previewBatchId = null"
         />
     </AppLayout>
 </template>

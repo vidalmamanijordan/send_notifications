@@ -13,14 +13,20 @@ class Teacher extends Model
         'dni',
         'full_name',
         'email',
-        'is_active'
+        'is_active',
+        'user_id',
     ];
 
     protected $casts = [
-        'is_active' => 'boolean'
+        'is_active' => 'boolean',
     ];
 
-    public function evaluationStatuses()
+    public function user(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function evaluationStatuses(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(TeacherEvaluationStatus::class);
     }

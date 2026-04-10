@@ -2,11 +2,17 @@
 import ExcelUploadModal from '@/components/excel-uploads/ExcelUploadModal.vue';
 import { useSwal } from '@/composables/useSwal';
 import AppLayout from '@/layouts/AppLayout.vue';
-import { Head, Link, router } from '@inertiajs/vue3';
-import { Trash2 } from 'lucide-vue-next';
+import { Head, router } from '@inertiajs/vue3';
+import { FileSpreadsheet, Trash2, Upload } from 'lucide-vue-next';
 import { ref } from 'vue';
 
 const Swal = useSwal();
+
+const translateLabel = (label: string): string =>
+    label.replace('Previous', 'Anterior').replace('Next', 'Siguiente');
+
+const isPageNumber = (label: string): boolean =>
+    /^\d+$/.test(label.replace(/&[^;]+;/g, '').trim());
 
 /* =========================
 Interfaces
@@ -19,6 +25,9 @@ interface Upload {
     import_batch?: {
         name: string;
         file_name: string;
+        file_size: number | null;
+        total_rows: number | null;
+        failed_rows: number | null;
         imported_at: string;
         is_active: boolean;
         user?: { name: string };
@@ -38,8 +47,11 @@ defineProps<{
     uploads: {
         data: Upload[];
         links: PaginationLink[];
+        total?: number;
+        from?: number;
+        to?: number;
     };
-    academicPeriods: { id: number; name: string }[];
+    activePeriod: { id: number; name: string } | null;
     campus: { id: number; name: string }[];
 }>();
 
@@ -49,25 +61,83 @@ Modal State
 const showModal = ref(false);
 
 /* =========================
+Active action state
+========================= */
+const activeDelete = ref<number | null>(null);
+
+const resetActive = () => {
+    setTimeout(() => {
+        activeDelete.value = null;
+    }, 400);
+};
+
+/* =========================
 Actions
 ========================= */
 const openCreateModal = () => (showModal.value = true);
 const closeModal = () => (showModal.value = false);
 
+const formatFileSize = (bytes?: number): string => {
+    if (!bytes) return '-';
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+};
+
+const formatDate = (date: string): string =>
+    new Date(date).toLocaleDateString('es-PE', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+    });
+
+const goToPage = (url: string | null) => {
+    if (!url) return;
+    router.visit(url, { preserveScroll: true, preserveState: true });
+};
+
 const deleteUpload = (upload: Upload) => {
+    activeDelete.value = upload.id;
+
     Swal.fire({
         title: '¿Eliminar carga?',
-        text: 'Se eliminará el archivo y su lote asociado',
+        html: `El archivo <strong>${upload.import_batch?.file_name ?? 'seleccionado'}</strong> y su lote asociado serán eliminados permanentemente.`,
         icon: 'warning',
         showCancelButton: true,
         confirmButtonText: 'Sí, eliminar',
         cancelButtonText: 'Cancelar',
-        confirmButtonColor: '#dc2626',
-        reverseButtons: true,
+        confirmButtonColor: '#087ab1',
+        cancelButtonColor: '#6b7280',
+        focusCancel: true,
     }).then((result) => {
-        if (result.isConfirmed) {
-            router.delete(route('admin.excel-uploads.destroy', upload.id));
+        if (!result.isConfirmed) {
+            resetActive();
+            return;
         }
+
+        Swal.fire({
+            title: '¿Estás completamente seguro?',
+            text: 'Esta acción no se puede deshacer.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, confirmar eliminación',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#dc2626',
+            cancelButtonColor: '#6b7280',
+            focusCancel: true,
+        }).then((second) => {
+            if (!second.isConfirmed) {
+                resetActive();
+                return;
+            }
+
+            router.delete(route('admin.excel-uploads.destroy', upload.id), {
+                preserveScroll: true,
+                onFinish: () => resetActive(),
+            });
+        });
     });
 };
 </script>
@@ -76,141 +146,238 @@ const deleteUpload = (upload: Upload) => {
     <Head title="Importar Reporte" />
 
     <AppLayout>
-        <div class="space-y-6 px-8 py-6">
+        <div class="space-y-6 px-6 py-6">
 
             <!-- HEADER -->
-            <div class="flex items-center justify-between border-b pb-4">
-                <h1 class="text-2xl font-semibold">
-                    Importar Reporte Excel
-                </h1>
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-[#087ab1] shadow-md">
+                        <FileSpreadsheet class="h-5 w-5 text-white" />
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold text-gray-900 dark:text-gray-100">
+                            Importar Reporte Excel
+                        </h1>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">
+                            {{ uploads.total ?? uploads.data.length }}
+                            archivo{{ (uploads.total ?? uploads.data.length) !== 1 ? 's' : '' }}
+                            importado{{ (uploads.total ?? uploads.data.length) !== 1 ? 's' : '' }}
+                        </p>
+                    </div>
+                </div>
 
                 <button
                     @click="openCreateModal"
-                    class="inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 active:scale-95"
+                    class="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-linear-to-r from-[#087ab1] to-[#68c8fb] px-4 py-2.5 text-sm font-medium text-white shadow-md transition hover:from-[#066a98] hover:to-[#4fbdf5] active:scale-95"
                 >
-                    + Subir Excel
+                    <Upload class="h-4 w-4" />
+                    Subir Excel
                 </button>
             </div>
 
             <!-- TABLA -->
-            <div class="rounded-lg border bg-white shadow-sm">
-                <div class="overflow-x-auto scroll-smooth">
-                    <table class="min-w-[1200px] w-full divide-y">
+            <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-900">
+                <table class="min-w-full divide-y divide-gray-100 dark:divide-gray-700">
+                    <thead>
+                        <tr class="bg-linear-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-800">
+                            <th class="px-5 py-3.5 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400">
+                                Estado
+                            </th>
+                            <th class="px-5 py-3.5 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400">
+                                Periodo
+                            </th>
+                            <th class="hidden px-5 py-3.5 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase md:table-cell dark:text-gray-400">
+                                Campus
+                            </th>
+                            <th class="px-5 py-3.5 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400">
+                                Lote / Archivo
+                            </th>
+                            <th class="hidden px-5 py-3.5 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase sm:table-cell dark:text-gray-400">
+                                Importado por
+                            </th>
+                            <th class="hidden px-5 py-3.5 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase md:table-cell dark:text-gray-400">
+                                Tamaño
+                            </th>
+                            <th class="hidden px-5 py-3.5 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase lg:table-cell dark:text-gray-400">
+                                Filas
+                            </th>
+                            <th class="hidden px-5 py-3.5 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase lg:table-cell dark:text-gray-400">
+                                Errores
+                            </th>
+                            <th class="hidden px-5 py-3.5 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase sm:table-cell dark:text-gray-400">
+                                Fecha
+                            </th>
+                            <th class="px-5 py-3.5 text-right text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400">
+                                Acciones
+                            </th>
+                        </tr>
+                    </thead>
 
-                        <!-- HEADER -->
-                        <thead class="bg-gray-50 sticky top-0 z-10">
-                            <tr>
-                                <th class="px-6 py-3 text-xs uppercase whitespace-nowrap">#</th>
-                                <th class="px-6 py-3 text-xs uppercase whitespace-nowrap">Periodo</th>
-                                <th class="px-6 py-3 text-xs uppercase whitespace-nowrap">Campus</th>
-                                <th class="px-6 py-3 text-xs uppercase whitespace-nowrap">Carga</th>
-                                <th class="px-6 py-3 text-xs uppercase whitespace-nowrap">Archivo</th>
-                                <th class="px-6 py-3 text-xs uppercase whitespace-nowrap">Importado por</th>
-                                <th class="px-6 py-3 text-xs uppercase whitespace-nowrap">Fecha</th>
-                                <th class="px-6 py-3 text-xs uppercase whitespace-nowrap">Activo</th>
-                                <th class="px-6 py-3 text-xs uppercase whitespace-nowrap">Estado</th>
-                                <th class="px-6 py-3 text-xs uppercase text-right whitespace-nowrap">Acciones</th>
-                            </tr>
-                        </thead>
+                    <tbody class="divide-y divide-gray-100 dark:divide-gray-700/60">
+                        <tr
+                            v-for="item in uploads.data"
+                            :key="item.id"
+                            class="group transition-all duration-150 hover:bg-[#68c8fb]/2 hover:shadow-[inset_3px_0_0_#087ab1] dark:hover:bg-[#68c8fb]/10 dark:hover:shadow-[inset_3px_0_0_#68c8fb]"
+                        >
+                            <!-- Estado -->
+                            <td class="px-5 py-3.5">
+                                <span
+                                    v-if="item.import_batch?.is_active"
+                                    class="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+                                >
+                                    <span class="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
+                                    Activo
+                                </span>
+                                <span
+                                    v-else
+                                    class="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-500 dark:bg-gray-800 dark:text-gray-400"
+                                >
+                                    <span class="h-1.5 w-1.5 rounded-full bg-gray-400" />
+                                    Histórico
+                                </span>
+                            </td>
 
-                        <!-- BODY -->
-                        <tbody class="divide-y">
-                            <tr
-                                v-for="(item, index) in uploads.data"
-                                :key="item.id"
-                                class="hover:bg-indigo-50/40"
-                            >
-                                <td class="px-6 py-2 text-sm whitespace-nowrap">
-                                    {{ index + 1 }}
-                                </td>
+                            <!-- Periodo -->
+                            <td class="px-5 py-3.5">
+                                <span class="text-sm text-gray-600 dark:text-gray-300">
+                                    {{ item.academic_period?.name ?? '-' }}
+                                </span>
+                            </td>
 
-                                <td class="px-6 py-2 text-sm whitespace-nowrap">
-                                    {{ item.academic_period?.name }}
-                                </td>
+                            <!-- Campus -->
+                            <td class="hidden px-5 py-3.5 md:table-cell">
+                                <span class="text-sm text-gray-600 dark:text-gray-300">
+                                    {{ item.campus?.name ?? '-' }}
+                                </span>
+                            </td>
 
-                                <td class="px-6 py-2 text-sm whitespace-nowrap">
-                                    {{ item.campus?.name }}
-                                </td>
+                            <!-- Lote / Archivo -->
+                            <td class="px-5 py-3.5">
+                                <div class="flex items-center gap-2.5">
+                                    <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#087ab1]/10">
+                                        <FileSpreadsheet class="h-4 w-4 text-[#087ab1]" />
+                                    </div>
+                                    <div class="min-w-0">
+                                        <p class="text-sm font-semibold text-gray-800 dark:text-gray-100">
+                                            {{ item.import_batch?.name ?? 'Sin lote' }}
+                                        </p>
+                                        <p class="truncate max-w-[160px] text-xs text-gray-400 dark:text-gray-500">
+                                            {{ item.import_batch?.file_name ?? '-' }}
+                                        </p>
+                                    </div>
+                                </div>
+                            </td>
 
-                                <td class="px-6 py-2 text-sm font-medium whitespace-nowrap">
-                                    {{ item.import_batch?.name ?? '-' }}
-                                </td>
-
-                                <td class="px-6 py-2 text-sm text-gray-500 whitespace-nowrap">
-                                    <span class="truncate block max-w-[180px]">
-                                        {{ item.import_batch?.file_name ?? '-' }}
-                                    </span>
-                                </td>
-
-                                <td class="px-6 py-2 text-sm whitespace-nowrap">
+                            <!-- Importado por -->
+                            <td class="hidden px-5 py-3.5 sm:table-cell">
+                                <span class="text-sm text-gray-600 dark:text-gray-300">
                                     {{ item.import_batch?.user?.name ?? '-' }}
-                                </td>
+                                </span>
+                            </td>
 
-                                <td class="px-6 py-2 text-sm text-gray-500 whitespace-nowrap">
-                                    {{ item.import_batch?.imported_at ?? '-' }}
-                                </td>
+                            <!-- Tamaño -->
+                            <td class="hidden px-5 py-3.5 md:table-cell">
+                                <span class="text-sm text-gray-500 dark:text-gray-400">
+                                    {{ formatFileSize(item.import_batch?.file_size) }}
+                                </span>
+                            </td>
 
-                                <td class="px-6 py-2 text-sm whitespace-nowrap">
-                                    <span
-                                        v-if="item.import_batch?.is_active"
-                                        class="rounded bg-green-100 px-2 py-1 text-xs text-green-700"
-                                    >
-                                        Activo
-                                    </span>
-                                    <span
-                                        v-else
-                                        class="rounded bg-gray-100 px-2 py-1 text-xs text-gray-600"
-                                    >
-                                        Histórico
-                                    </span>
-                                </td>
+                            <!-- Filas totales -->
+                            <td class="hidden px-5 py-3.5 lg:table-cell">
+                                <span
+                                    v-if="item.import_batch?.total_rows != null"
+                                    class="inline-flex items-center rounded-full bg-[#087ab1]/10 px-2.5 py-0.5 text-xs font-medium text-[#087ab1] dark:bg-[#087ab1]/20 dark:text-[#68c8fb]"
+                                >
+                                    {{ item.import_batch.total_rows }}
+                                </span>
+                                <span v-else class="text-sm text-gray-400">-</span>
+                            </td>
 
-                                <td class="px-6 py-2 text-sm capitalize whitespace-nowrap">
-                                    {{ item.status }}
-                                </td>
+                            <!-- Errores -->
+                            <td class="hidden px-5 py-3.5 lg:table-cell">
+                                <span
+                                    v-if="item.import_batch?.failed_rows != null && item.import_batch.failed_rows > 0"
+                                    class="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-600 dark:bg-red-900/30 dark:text-red-400"
+                                >
+                                    {{ item.import_batch.failed_rows }}
+                                </span>
+                                <span
+                                    v-else-if="item.import_batch?.failed_rows === 0"
+                                    class="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+                                >
+                                    0
+                                </span>
+                                <span v-else class="text-sm text-gray-400">-</span>
+                            </td>
 
-                                <td class="px-6 py-2 text-right whitespace-nowrap">
-                                    <button
-                                        @click="deleteUpload(item)"
-                                        class="flex h-9 w-9 items-center justify-center rounded-full text-red-600 hover:bg-red-600 hover:text-white"
-                                    >
-                                        <Trash2 class="h-4 w-4" />
-                                    </button>
-                                </td>
-                            </tr>
+                            <!-- Fecha -->
+                            <td class="hidden px-5 py-3.5 sm:table-cell">
+                                <span class="text-sm text-gray-500 dark:text-gray-400">
+                                    {{ item.import_batch?.imported_at ? formatDate(item.import_batch.imported_at) : '-' }}
+                                </span>
+                            </td>
 
-                            <tr v-if="uploads.data.length === 0">
-                                <td colspan="10" class="py-6 text-center text-sm text-gray-500">
-                                    No hay archivos cargados
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+                            <!-- Acciones -->
+                            <td class="px-5 py-3.5 text-right">
+                                <button
+                                    @click="deleteUpload(item)"
+                                    title="Eliminar carga"
+                                    class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full transition-all duration-200"
+                                    :class="activeDelete === item.id
+                                        ? 'bg-red-600 text-white shadow-md'
+                                        : 'text-red-500 hover:bg-red-600 hover:text-white'"
+                                >
+                                    <Trash2 class="h-3.5 w-3.5" />
+                                </button>
+                            </td>
+                        </tr>
+
+                        <!-- Sin datos -->
+                        <tr v-if="uploads.data.length === 0">
+                            <td colspan="10" class="px-6 py-16 text-center">
+                                <div class="flex flex-col items-center gap-3">
+                                    <div class="flex h-14 w-14 items-center justify-center rounded-full bg-[#087ab1]/10 dark:bg-[#087ab1]/20">
+                                        <FileSpreadsheet class="h-7 w-7 text-[#087ab1]/60" />
+                                    </div>
+                                    <p class="text-sm font-medium text-gray-500">
+                                        No hay archivos importados aún
+                                    </p>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
 
             <!-- PAGINACIÓN -->
-            <div class="flex justify-end">
+            <div v-if="uploads.links && uploads.links.length > 3" class="flex justify-end">
                 <nav class="inline-flex gap-1">
-                    <Link
-                        v-for="link in uploads.links"
-                        :key="link.label"
-                        :href="link.url ?? '#'"
-                        v-html="link.label"
-                        class="rounded-md border px-3 py-1 text-sm"
-                        :class="{
-                            'bg-indigo-600 text-white': link.active,
-                            'hover:bg-gray-100': !link.active && link.url,
-                        }"
-                    />
+                    <template v-for="link in uploads.links" :key="link.label">
+                        <a
+                            v-if="link.url"
+                            :href="link.url"
+                            @click.prevent="goToPage(link.url)"
+                            class="rounded-lg border px-3 py-1.5 text-sm font-medium transition-all"
+                            :class="link.active && isPageNumber(link.label)
+                                ? 'border-[#68c8fb] bg-[#68c8fb] text-white shadow-sm'
+                                : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300 hover:bg-gray-50 hover:text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400'"
+                            v-html="translateLabel(link.label)"
+                        />
+                        <span
+                            v-else
+                            class="cursor-not-allowed rounded-lg border border-gray-100 bg-white px-3 py-1.5 text-sm font-medium text-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-600"
+                            v-html="translateLabel(link.label)"
+                        />
+                    </template>
                 </nav>
             </div>
+
         </div>
 
         <!-- MODAL -->
         <ExcelUploadModal
             :show="showModal"
-            :academicPeriods="academicPeriods"
+            :activePeriod="activePeriod"
             :campus="campus"
             @close="closeModal"
             @success="closeModal"

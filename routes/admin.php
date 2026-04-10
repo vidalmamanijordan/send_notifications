@@ -1,7 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\AcademicPeriodController;
-use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Admin\AcademicPeriodSwitchController;
 use App\Http\Controllers\Admin\CampusController;
 use App\Http\Controllers\Admin\CourseController;
 use App\Http\Controllers\Admin\ExcelUploadController;
@@ -11,8 +11,10 @@ use App\Http\Controllers\Admin\NotificationBatchController;
 use App\Http\Controllers\Admin\NotificationTemplateController;
 use App\Http\Controllers\Admin\OfficeController;
 use App\Http\Controllers\Admin\ProgramController;
-use App\Http\Controllers\Admin\AcademicPeriodSwitchController;
+use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\TeacherController;
+use App\Http\Controllers\Admin\UserController;
+use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'verified'])
     ->prefix('admin')
@@ -23,81 +25,121 @@ Route::middleware(['auth', 'verified'])
             return redirect()->route('dashboard');
         });
 
-        Route::post('switch-period', [AcademicPeriodSwitchController::class, 'switch'])->name('switch-period');
+        // ┌─────────────────────────────────────────────────────────────────────┐
+        // │  SUPERADMIN — gestión de roles del sistema                          │
+        // └─────────────────────────────────────────────────────────────────────┘
+        Route::middleware('role:superadmin')->group(function () {
+            Route::resource('roles', RoleController::class)->except(['create', 'edit', 'show']);
 
-        Route::get('teachers/search', [TeacherController::class, 'search'])->name('teachers.search');
-        Route::get('teachers/{teacher}', [TeacherController::class, 'show'])->name('teachers.show');
-        Route::patch('teachers/{teacher}', [TeacherController::class, 'update'])->name('teachers.update');
+            Route::post('teachers/{teacher}/link-user', [TeacherController::class, 'linkUser'])->name('teachers.link-user');
+            Route::patch('teachers/{teacher}/update-role', [TeacherController::class, 'updateRole'])->name('teachers.update-role');
+            Route::delete('teachers/{teacher}/unlink-user', [TeacherController::class, 'unlinkUser'])->name('teachers.unlink-user');
+        });
 
-        Route::resource('campus', CampusController::class);
-        Route::resource(
-            'academic-periods',
-            AcademicPeriodController::class
-        )->except(['create', 'edit', 'show']);
-        Route::resource(
-            'faculties',
-            FacultyController::class
-        )->except(['create', 'edit', 'show']);
-        Route::resource(
-            'programs',
-            ProgramController::class
-        )->except(['create', 'edit', 'show']);
+        // ┌─────────────────────────────────────────────────────────────────────┐
+        // │  USUARIOS — basado en permisos                                      │
+        // └─────────────────────────────────────────────────────────────────────┘
+        Route::middleware('permission:users.viewAny')->group(function () {
+            Route::resource('users', UserController::class)->except(['create', 'edit']);
+        });
 
-        Route::resource(
-            'courses',
-            CourseController::class
-        )->except(['create', 'edit', 'show']);
-        Route::resource(
-            'excel-uploads',
-            ExcelUploadController::class
-        )->only(['index', 'store', 'destroy']);
-        Route::get(
-            'expired-evaluations',
-            [ExpiredEvaluationController::class, 'index']
-        )->name('expired-evaluations.index');
+        // ┌─────────────────────────────────────────────────────────────────────┐
+        // │  BASADO EN PERMISOS — configuración académica y operativa           │
+        // └─────────────────────────────────────────────────────────────────────┘
 
-        Route::resource(
-            'notification-batches',
-            NotificationBatchController::class
-        )->only(['index', 'show']);
+        // Cambio de periodo activo
+        Route::middleware('permission:academicPeriods.switch')
+            ->post('switch-period', [AcademicPeriodSwitchController::class, 'switch'])
+            ->name('switch-period');
 
-        Route::get(
-            'notification-batches/{notificationBatch}/preview',
-            [NotificationBatchController::class, 'preview']
-        )->name('notification-batches.preview');
+        // Docentes — lectura
+        Route::middleware('permission:teachers.viewAny')->group(function () {
+            Route::get('teachers', [TeacherController::class, 'index'])->name('teachers.index');
+            Route::get('teachers/search', [TeacherController::class, 'search'])->name('teachers.search');
+            Route::get('teachers/{teacher}', [TeacherController::class, 'show'])->name('teachers.show');
+        });
 
-        Route::patch(
-            'notification-batches/{notificationBatch}/attach-template',
-            [NotificationBatchController::class, 'attachTemplate']
-        )->name('notification-batches.attach-template');
+        // Docentes — escritura
+        Route::middleware('permission:teachers.update')
+            ->patch('teachers/{teacher}', [TeacherController::class, 'update'])
+            ->name('teachers.update');
 
-        Route::patch(
-            'notification-batches/{notificationBatch}/assign-office',
-            [NotificationBatchController::class, 'assignOffice']
-        )->name('notification-batches.assign-office');
+        // Campus
+        Route::middleware('permission:campus.viewAny')->group(function () {
+            Route::resource('campus', CampusController::class);
+        });
 
-        Route::post(
-            'notification-batches/{notificationBatch}/send',
-            [NotificationBatchController::class, 'send']
-        )->name('notification-batches.send');
+        // Periodos académicos
+        Route::middleware('permission:academicPeriods.viewAny')->group(function () {
+            Route::resource('academic-periods', AcademicPeriodController::class)
+                ->except(['create', 'edit', 'show']);
+        });
 
-        Route::post(
-            'notification-batch-details/{detail}/resend',
-            [NotificationBatchController::class, 'resendDetail']
-        )->name('notification-batch-details.resend');
+        // Facultades
+        Route::middleware('permission:faculties.viewAny')->group(function () {
+            Route::resource('faculties', FacultyController::class)
+                ->except(['create', 'edit', 'show']);
+        });
 
-        Route::get(
-            'notification-templates/list',
-            [NotificationBatchController::class, 'getTemplates']
-        )->name('notification-templates.list');
+        // Programas
+        Route::middleware('permission:programs.viewAny')->group(function () {
+            Route::resource('programs', ProgramController::class)
+                ->except(['create', 'edit', 'show']);
+        });
 
-        Route::resource(
-            'notification-templates',
-            NotificationTemplateController::class
-        )->except(['create', 'edit']);
+        // Cursos
+        Route::middleware('permission:courses.viewAny')->group(function () {
+            Route::resource('courses', CourseController::class)
+                ->except(['create', 'edit', 'show']);
+        });
 
-        Route::resource(
-            'offices',
-            OfficeController::class
-        )->except(['create', 'edit', 'show']);
+        // Importaciones Excel
+        Route::middleware('permission:excelUploads.viewAny')->group(function () {
+            Route::resource('excel-uploads', ExcelUploadController::class)
+                ->only(['index', 'store', 'destroy']);
+        });
+
+        // Seguimiento — evaluaciones vencidas
+        Route::middleware('permission:expiredEvaluations.viewAny')
+            ->get('expired-evaluations', [ExpiredEvaluationController::class, 'index'])
+            ->name('expired-evaluations.index');
+
+        // Oficinas
+        Route::middleware('permission:offices.viewAny')->group(function () {
+            Route::resource('offices', OfficeController::class)
+                ->except(['create', 'edit', 'show']);
+        });
+
+        // Plantillas de notificación
+        Route::middleware('permission:notificationTemplates.viewAny')->group(function () {
+            Route::get('notification-templates/list', [NotificationBatchController::class, 'getTemplates'])
+                ->name('notification-templates.list');
+            Route::resource('notification-templates', NotificationTemplateController::class)
+                ->except(['create', 'edit']);
+        });
+
+        // Lotes de notificación — lectura y vista previa
+        Route::middleware('permission:notificationBatches.viewAny')->group(function () {
+            Route::resource('notification-batches', NotificationBatchController::class)
+                ->only(['index', 'show']);
+            Route::get('notification-batches/{notificationBatch}/preview', [NotificationBatchController::class, 'preview'])
+                ->name('notification-batches.preview');
+        });
+
+        // Lotes — acciones específicas por permiso
+        Route::middleware('permission:notificationBatches.attachTemplate')
+            ->patch('notification-batches/{notificationBatch}/attach-template', [NotificationBatchController::class, 'attachTemplate'])
+            ->name('notification-batches.attach-template');
+
+        Route::middleware('permission:notificationBatches.assignOffice')
+            ->patch('notification-batches/{notificationBatch}/assign-office', [NotificationBatchController::class, 'assignOffice'])
+            ->name('notification-batches.assign-office');
+
+        Route::middleware('permission:notificationBatches.send')
+            ->post('notification-batches/{notificationBatch}/send', [NotificationBatchController::class, 'send'])
+            ->name('notification-batches.send');
+
+        Route::middleware('permission:notificationBatches.resend')
+            ->post('notification-batch-details/{detail}/resend', [NotificationBatchController::class, 'resendDetail'])
+            ->name('notification-batch-details.resend');
     });

@@ -6,10 +6,10 @@ use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
 {
-    
     public function run(): void
     {
         $this->call([
+            RolePermissionSeeder::class,
             UserSeeder::class,
             CampusSeeder::class,
             FacultySeeder::class,

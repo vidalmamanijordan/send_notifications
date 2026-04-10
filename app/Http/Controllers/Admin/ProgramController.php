@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Program;
-use Inertia\Inertia;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class ProgramController extends Controller
 {
@@ -18,9 +18,10 @@ class ProgramController extends Controller
 
     public function store(Request $request)
     {
+        abort_if(! auth()->user()->can('programs.create'), 403);
         $validated = $request->validate([
-            'name'  => 'required|string|max:150',
-            'code'  => 'required|string|max:20|unique:programs,code',
+            'name' => 'required|string|max:150',
+            'code' => 'required|string|max:20|unique:programs,code',
             'level' => 'required|in:undergraduate,postgraduate',
         ]);
 
@@ -33,9 +34,10 @@ class ProgramController extends Controller
 
     public function update(Request $request, Program $program)
     {
+        abort_if(! auth()->user()->can('programs.update'), 403);
         $validated = $request->validate([
-            'name'  => 'required|string|max:150',
-            'code'  => 'required|string|max:20|unique:programs,code,' . $program->id,
+            'name' => 'required|string|max:150',
+            'code' => 'required|string|max:20|unique:programs,code,'.$program->id,
             'level' => 'required|in:undergraduate,postgraduate',
         ]);
 
@@ -48,6 +50,7 @@ class ProgramController extends Controller
 
     public function destroy(Program $program)
     {
+        abort_if(! auth()->user()->can('programs.delete'), 403);
         $program->delete();
 
         return redirect()

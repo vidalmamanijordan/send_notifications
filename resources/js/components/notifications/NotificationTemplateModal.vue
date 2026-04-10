@@ -247,7 +247,7 @@ const bodyRendered = computed(() => {
                 leave-from="opacity-100"
                 leave-to="opacity-0"
             >
-                <div class="fixed inset-0 bg-black/30 backdrop-blur-sm" />
+                <div class="fixed inset-0 bg-black/40 backdrop-blur-[1px]" />
             </TransitionChild>
 
             <div class="fixed inset-0 flex items-center justify-center p-6">
@@ -265,16 +265,27 @@ const bodyRendered = computed(() => {
                     >
                         <!-- HEADER con preview en vivo -->
                         <div
-                            class="relative overflow-hidden bg-gradient-to-br from-orange-400 via-pink-400 to-rose-500 px-6 py-6"
+                            class="relative overflow-hidden bg-linear-to-br from-[#087ab1] to-[#68c8fb] px-6 py-6"
                         >
+                            <!-- Círculos decorativos -->
                             <div
-                                class="pointer-events-none absolute -top-12 -right-12 h-52 w-52 rounded-full bg-white/5"
+                                class="pointer-events-none absolute -top-12 -right-12 h-52 w-52 rounded-full bg-white/8"
                             />
                             <div
                                 class="pointer-events-none absolute right-40 -bottom-8 h-36 w-36 rounded-full bg-white/5"
                             />
                             <div
                                 class="pointer-events-none absolute bottom-0 left-1/3 h-24 w-24 rounded-full bg-white/5"
+                            />
+                            <!-- Líneas diagonales decorativas -->
+                            <div
+                                class="pointer-events-none absolute -top-2 right-28 h-[160%] w-px rotate-22 rounded-full bg-white/20"
+                            />
+                            <div
+                                class="pointer-events-none absolute -top-2 right-20 h-[160%] w-px rotate-22 rounded-full bg-white/14"
+                            />
+                            <div
+                                class="pointer-events-none absolute -top-2 right-12 h-[160%] w-px rotate-22 rounded-full bg-white/8"
                             />
 
                             <div class="relative flex items-stretch gap-5">
@@ -300,7 +311,7 @@ const bodyRendered = computed(() => {
                                                         : 'Nueva Plantilla'
                                                 }}
                                             </DialogTitle>
-                                            <p class="text-xs text-pink-100">
+                                            <p class="text-xs text-[#68c8fb]">
                                                 {{
                                                     isEdit
                                                         ? 'Modifica los datos de la plantilla'
@@ -358,7 +369,7 @@ const bodyRendered = computed(() => {
                                     <div class="space-y-2 p-3">
                                         <div class="flex items-center gap-1.5">
                                             <Mail
-                                                class="h-3 w-3 shrink-0 text-pink-100"
+                                                class="h-3 w-3 shrink-0 text-[#68c8fb]"
                                             />
                                             <p
                                                 class="truncate text-xs font-semibold text-white"
@@ -391,7 +402,7 @@ const bodyRendered = computed(() => {
                                             class="flex items-center gap-1.5 text-xs font-semibold tracking-wide text-gray-500 uppercase"
                                         >
                                             <FileText
-                                                class="h-3.5 w-3.5 text-pink-400"
+                                                class="h-3.5 w-3.5 text-[#68c8fb]"
                                             />
                                             Nombre de la plantilla
                                             <span
@@ -403,7 +414,7 @@ const bodyRendered = computed(() => {
                                             v-model="form.name"
                                             type="text"
                                             placeholder="Ej: Bienvenida usuario nuevo"
-                                            class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 transition-all focus:border-pink-400 focus:bg-white focus:ring-2 focus:ring-pink-100 focus:outline-none"
+                                            class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 transition-all focus:border-[#087ab1] focus:bg-white focus:ring-2 focus:ring-[#68c8fb]/20 focus:outline-none"
                                             :class="{
                                                 'border-red-300 bg-red-50 focus:border-red-400 focus:ring-red-100':
                                                     form.errors.name,
@@ -423,7 +434,7 @@ const bodyRendered = computed(() => {
                                             class="flex items-center gap-1.5 text-xs font-semibold tracking-wide text-gray-500 uppercase"
                                         >
                                             <Mail
-                                                class="h-3.5 w-3.5 text-pink-400"
+                                                class="h-3.5 w-3.5 text-[#68c8fb]"
                                             />
                                             Asunto
                                             <span
@@ -435,7 +446,7 @@ const bodyRendered = computed(() => {
                                             v-model="form.subject"
                                             type="text"
                                             placeholder="Ej: Bienvenido a nuestra plataforma"
-                                            class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 transition-all focus:border-pink-400 focus:bg-white focus:ring-2 focus:ring-pink-100 focus:outline-none"
+                                            class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 transition-all focus:border-[#087ab1] focus:bg-white focus:ring-2 focus:ring-[#68c8fb]/20 focus:outline-none"
                                             :class="{
                                                 'border-red-300 bg-red-50 focus:border-red-400 focus:ring-red-100':
                                                     form.errors.subject,
@@ -471,7 +482,7 @@ const bodyRendered = computed(() => {
                                             class="flex items-center gap-1.5 text-xs font-semibold tracking-wide text-gray-500 uppercase"
                                         >
                                             <AlignLeft
-                                                class="h-3.5 w-3.5 text-pink-400"
+                                                class="h-3.5 w-3.5 text-[#68c8fb]"
                                             />
                                             Cuerpo del mensaje
                                             <span
@@ -480,10 +491,10 @@ const bodyRendered = computed(() => {
                                             >
                                         </label>
                                         <div
-                                            class="flex items-center gap-2 rounded-xl border border-pink-100 bg-gradient-to-br from-orange-50 to-pink-50 px-3 py-1.5"
+                                            class="flex items-center gap-2 rounded-xl border border-[#68c8fb]/30 bg-[#68c8fb]/10 px-3 py-1.5"
                                         >
                                             <CheckCircle
-                                                class="h-4 w-4 text-pink-400"
+                                                class="h-4 w-4 text-[#68c8fb]"
                                             />
                                             <span
                                                 class="text-xs font-medium text-gray-600"
@@ -501,9 +512,9 @@ const bodyRendered = computed(() => {
                                                         !form.is_active
                                                 "
                                                 :class="[
-                                                    'relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors focus:ring-2 focus:ring-pink-400 focus:ring-offset-1 focus:outline-none',
+                                                    'relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors focus:ring-2 focus:ring-[#087ab1] focus:ring-offset-1 focus:outline-none',
                                                     form.is_active
-                                                        ? 'bg-pink-500'
+                                                        ? 'bg-[#087ab1]'
                                                         : 'bg-gray-200',
                                                 ]"
                                             >
@@ -632,7 +643,7 @@ const bodyRendered = computed(() => {
                                             @input="onBodyInput"
                                             rows="10"
                                             placeholder="Escribe el contenido principal del mensaje...&#10;&#10;Usa {docente} para el nombre del docente y {cursos} para la lista de cursos."
-                                            class="h-full w-full resize-none border-r border-gray-200 bg-white px-3.5 py-2.5 font-mono text-sm text-gray-900 placeholder-gray-400 transition-all focus:border-pink-400 focus:ring-2 focus:ring-pink-100 focus:outline-none"
+                                            class="h-full w-full resize-none border-r border-gray-200 bg-white px-3.5 py-2.5 font-mono text-sm text-gray-900 placeholder-gray-400 transition-all focus:border-[#087ab1] focus:ring-2 focus:ring-[#68c8fb]/20 focus:outline-none"
                                             :class="{
                                                 'bg-red-50': form.errors.body,
                                             }"
@@ -644,7 +655,7 @@ const bodyRendered = computed(() => {
                                                 class="flex items-center gap-1.5 border-b border-gray-200 bg-white px-3 py-1.5"
                                             >
                                                 <span
-                                                    class="h-1.5 w-1.5 rounded-full bg-pink-400"
+                                                    class="h-1.5 w-1.5 rounded-full bg-[#087ab1]"
                                                 />
                                                 <span
                                                     class="text-[10px] font-semibold tracking-wide text-gray-400 uppercase"
@@ -686,7 +697,7 @@ const bodyRendered = computed(() => {
                                 </button>
                                 <button
                                     type="button"
-                                    class="flex items-center gap-2 rounded-xl bg-gradient-to-r from-orange-400 to-pink-500 px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-pink-200 transition-all hover:from-orange-300 hover:to-pink-400 hover:shadow-lg hover:shadow-pink-300 disabled:cursor-not-allowed disabled:opacity-60"
+                                    class="flex items-center gap-2 rounded-xl bg-linear-to-r from-[#087ab1] to-[#68c8fb] px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-[#087ab1]/30 transition-all hover:opacity-90 hover:shadow-lg hover:shadow-[#087ab1]/40 disabled:cursor-not-allowed disabled:opacity-60"
                                     :disabled="form.processing"
                                     @click="submit"
                                 >

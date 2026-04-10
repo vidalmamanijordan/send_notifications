@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Faculty;
-use Inertia\Inertia;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class FacultyController extends Controller
 {
@@ -16,9 +16,9 @@ class FacultyController extends Controller
         ]);
     }
 
-
     public function store(Request $request)
     {
+        abort_if(! auth()->user()->can('faculties.create'), 403);
         $request->validate([
             'name' => 'required|string|max:150',
             'code' => 'required|string|max:20|unique:faculties,code',
@@ -33,9 +33,10 @@ class FacultyController extends Controller
 
     public function update(Request $request, Faculty $faculty)
     {
+        abort_if(! auth()->user()->can('faculties.update'), 403);
         $request->validate([
             'name' => 'required|string|max:150',
-            'code' => 'required|string|max:20|unique:faculties,code,' . $faculty->id,
+            'code' => 'required|string|max:20|unique:faculties,code,'.$faculty->id,
         ]);
 
         $faculty->update($request->only('name', 'code'));
@@ -47,6 +48,7 @@ class FacultyController extends Controller
 
     public function destroy(Faculty $faculty)
     {
+        abort_if(! auth()->user()->can('faculties.delete'), 403);
         $faculty->delete();
 
         return redirect()
