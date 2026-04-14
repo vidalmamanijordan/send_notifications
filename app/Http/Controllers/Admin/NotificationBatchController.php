@@ -127,7 +127,7 @@ class NotificationBatchController extends Controller
 
     public function preview(NotificationBatch $notificationBatch)
     {
-        $notificationBatch->load('office');
+        $notificationBatch->load(['office', 'campus']);
 
         // Traer solo algunos docentes para preview (evita consultas pesadas)
         $batchDetails = $notificationBatch->details()
@@ -161,9 +161,9 @@ class NotificationBatchController extends Controller
             $courses = TeacherEvaluationStatus::where('teacher_id', $firstTeacher['id'])
                 ->where('import_batch_id', $notificationBatch->import_batch_id)
                 ->where('expired_components', '>', 0)
-                ->with('course')
+                ->with(['course', 'campus'])
                 ->get()
-                ->map(fn ($c) => "- {$c->course?->name} (Ciclo: {$c->cycle}, Grupo: {$c->group})")
+                ->map(fn ($c) => "- {$c->course?->name} (Ciclo: {$c->cycle}, Grupo: {$c->group}) - {$c->campus?->name}")
                 ->implode("\n");
 
             $body = str_replace(
@@ -194,6 +194,7 @@ class NotificationBatchController extends Controller
             'body' => $htmlBody,
             'officeName' => $office?->name ?? '',
             'officeEmail' => $office?->email ?? '',
+            'campusName' => $notificationBatch->campus?->name ?? '',
             'signatureUrl' => $signatureUrl,
             'sentAt' => now()->format('d/m/Y H:i'),
         ])->render();

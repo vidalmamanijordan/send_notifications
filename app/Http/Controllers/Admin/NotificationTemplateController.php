@@ -83,6 +83,7 @@ class NotificationTemplateController extends Controller
             'body' => $htmlBody,
             'officeName' => 'Dirección Académica',
             'officeEmail' => 'oficina@universidad.edu.pe',
+            'campusName' => 'Campus Lima',
             'signatureUrl' => null,
             'sentAt' => now()->format('d/m/Y H:i'),
         ])->render();

@@ -69,7 +69,7 @@ class SendNotificationBatchJob implements ShouldQueue
     {
         set_time_limit(0);
 
-        $batch = NotificationBatch::with(['details.teacher', 'office'])
+        $batch = NotificationBatch::with(['details.teacher', 'office', 'campus'])
             ->find($this->batchId);
 
         if (! $batch) {
@@ -128,11 +128,11 @@ class SendNotificationBatchJob implements ShouldQueue
                 $courses = TeacherEvaluationStatus::where('teacher_id', $teacher->id)
                     ->where('import_batch_id', $batch->import_batch_id)
                     ->where('expired_components', '>', 0)
-                    ->with('course')
+                    ->with(['course', 'campus'])
                     ->get();
 
                 $courseList = $courses->map(function ($c) {
-                    return "- {$c->course?->name} (Ciclo: {$c->cycle}, Grupo: {$c->group})";
+                    return "- {$c->course?->name} (Ciclo: {$c->cycle}, Grupo: {$c->group}) - {$c->campus?->name}";
                 })->implode("\n");
 
                 $body = str_replace(
@@ -159,6 +159,7 @@ class SendNotificationBatchJob implements ShouldQueue
                     'body' => $htmlBody,
                     'officeName' => $office?->name ?? '',
                     'officeEmail' => $office?->email ?? '',
+                    'campusName' => $batch->campus?->name ?? '',
                     'signatureUrl' => $signatureUrl,
                     'sentAt' => now()->format('d/m/Y H:i'),
                 ];

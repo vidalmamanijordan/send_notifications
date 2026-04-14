@@ -162,21 +162,34 @@ const deleteUpload = (upload: Upload) => {
 
     <AppLayout>
         <div class="space-y-6 px-6 py-6">
-
             <!-- HEADER -->
-            <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div
+                class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
+            >
                 <div class="flex items-center gap-3">
-                    <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-[#087ab1] shadow-md">
+                    <div
+                        class="flex h-10 w-10 items-center justify-center rounded-xl bg-[#087ab1] shadow-md"
+                    >
                         <FileSpreadsheet class="h-5 w-5 text-white" />
                     </div>
                     <div>
-                        <h1 class="text-xl font-bold text-gray-900 dark:text-gray-100">
-                            Importar Reporte Excel
+                        <h1
+                            class="text-xl font-bold text-gray-900 dark:text-gray-100"
+                        >
+                            Importar Rúbros Vencidos
                         </h1>
                         <p class="text-xs text-gray-500 dark:text-gray-400">
                             {{ uploads.total ?? uploads.data.length }}
-                            archivo{{ (uploads.total ?? uploads.data.length) !== 1 ? 's' : '' }}
-                            importado{{ (uploads.total ?? uploads.data.length) !== 1 ? 's' : '' }}
+                            archivo{{
+                                (uploads.total ?? uploads.data.length) !== 1
+                                    ? 's'
+                                    : ''
+                            }}
+                            importado{{
+                                (uploads.total ?? uploads.data.length) !== 1
+                                    ? 's'
+                                    : ''
+                            }}
                         </p>
                     </div>
                 </div>
@@ -185,11 +198,19 @@ const deleteUpload = (upload: Upload) => {
                     <!-- Filtro campus -->
                     <select
                         v-model="selectedCampus"
-                        class="rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-sm text-gray-700 shadow-sm transition focus:border-[#087ab1] focus:outline-none focus:ring-2 focus:ring-[#68c8fb]/20 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
-                        :class="selectedCampus ? 'border-[#087ab1] ring-2 ring-[#68c8fb]/20' : ''"
+                        class="rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-sm text-gray-700 shadow-sm transition focus:border-[#087ab1] focus:ring-2 focus:ring-[#68c8fb]/20 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
+                        :class="
+                            selectedCampus
+                                ? 'border-[#087ab1] ring-2 ring-[#68c8fb]/20'
+                                : ''
+                        "
                     >
                         <option value="">Todos los campus</option>
-                        <option v-for="c in campus" :key="c.id" :value="String(c.id)">
+                        <option
+                            v-for="c in campus"
+                            :key="c.id"
+                            :value="String(c.id)"
+                        >
                             {{ c.name }}
                         </option>
                     </select>
@@ -212,44 +233,72 @@ const deleteUpload = (upload: Upload) => {
             </div>
 
             <!-- TABLA -->
-            <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-900">
-                <table class="min-w-full divide-y divide-gray-100 dark:divide-gray-700">
+            <div
+                class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-900"
+            >
+                <table
+                    class="min-w-full divide-y divide-gray-100 dark:divide-gray-700"
+                >
                     <thead>
-                        <tr class="bg-linear-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-800">
-                            <th class="px-5 py-3.5 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400">
+                        <tr
+                            class="bg-linear-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-800"
+                        >
+                            <th
+                                class="px-5 py-3.5 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
+                            >
                                 Estado
                             </th>
-                            <th class="px-5 py-3.5 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400">
+                            <th
+                                class="px-5 py-3.5 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
+                            >
                                 Periodo
                             </th>
-                            <th class="hidden px-5 py-3.5 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase md:table-cell dark:text-gray-400">
+                            <th
+                                class="hidden px-5 py-3.5 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase md:table-cell dark:text-gray-400"
+                            >
                                 Campus
                             </th>
-                            <th class="px-5 py-3.5 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400">
+                            <th
+                                class="px-5 py-3.5 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
+                            >
                                 Lote / Archivo
                             </th>
-                            <th class="hidden px-5 py-3.5 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase sm:table-cell dark:text-gray-400">
+                            <th
+                                class="hidden px-5 py-3.5 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase sm:table-cell dark:text-gray-400"
+                            >
                                 Importado por
                             </th>
-                            <th class="hidden px-5 py-3.5 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase md:table-cell dark:text-gray-400">
+                            <th
+                                class="hidden px-5 py-3.5 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase md:table-cell dark:text-gray-400"
+                            >
                                 Tamaño
                             </th>
-                            <th class="hidden px-5 py-3.5 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase lg:table-cell dark:text-gray-400">
+                            <th
+                                class="hidden px-5 py-3.5 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase lg:table-cell dark:text-gray-400"
+                            >
                                 Filas
                             </th>
-                            <th class="hidden px-5 py-3.5 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase lg:table-cell dark:text-gray-400">
+                            <th
+                                class="hidden px-5 py-3.5 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase lg:table-cell dark:text-gray-400"
+                            >
                                 Errores
                             </th>
-                            <th class="hidden px-5 py-3.5 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase sm:table-cell dark:text-gray-400">
+                            <th
+                                class="hidden px-5 py-3.5 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase sm:table-cell dark:text-gray-400"
+                            >
                                 Fecha
                             </th>
-                            <th class="px-5 py-3.5 text-right text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400">
+                            <th
+                                class="px-5 py-3.5 text-right text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
+                            >
                                 Acciones
                             </th>
                         </tr>
                     </thead>
 
-                    <tbody class="divide-y divide-gray-100 dark:divide-gray-700/60">
+                    <tbody
+                        class="divide-y divide-gray-100 dark:divide-gray-700/60"
+                    >
                         <tr
                             v-for="item in uploads.data"
                             :key="item.id"
@@ -261,28 +310,36 @@ const deleteUpload = (upload: Upload) => {
                                     v-if="item.import_batch?.is_active"
                                     class="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
                                 >
-                                    <span class="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
+                                    <span
+                                        class="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500"
+                                    />
                                     Activo
                                 </span>
                                 <span
                                     v-else
                                     class="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-500 dark:bg-gray-800 dark:text-gray-400"
                                 >
-                                    <span class="h-1.5 w-1.5 rounded-full bg-gray-400" />
+                                    <span
+                                        class="h-1.5 w-1.5 rounded-full bg-gray-400"
+                                    />
                                     Histórico
                                 </span>
                             </td>
 
                             <!-- Periodo -->
                             <td class="px-5 py-3.5">
-                                <span class="text-sm text-gray-600 dark:text-gray-300">
+                                <span
+                                    class="text-sm text-gray-600 dark:text-gray-300"
+                                >
                                     {{ item.academic_period?.name ?? '-' }}
                                 </span>
                             </td>
 
                             <!-- Campus -->
                             <td class="hidden px-5 py-3.5 md:table-cell">
-                                <span class="text-sm text-gray-600 dark:text-gray-300">
+                                <span
+                                    class="text-sm text-gray-600 dark:text-gray-300"
+                                >
                                     {{ item.campus?.name ?? '-' }}
                                 </span>
                             </td>
@@ -290,15 +347,29 @@ const deleteUpload = (upload: Upload) => {
                             <!-- Lote / Archivo -->
                             <td class="px-5 py-3.5">
                                 <div class="flex items-center gap-2.5">
-                                    <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#087ab1]/10">
-                                        <FileSpreadsheet class="h-4 w-4 text-[#087ab1]" />
+                                    <div
+                                        class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#087ab1]/10"
+                                    >
+                                        <FileSpreadsheet
+                                            class="h-4 w-4 text-[#087ab1]"
+                                        />
                                     </div>
                                     <div class="min-w-0">
-                                        <p class="text-sm font-semibold text-gray-800 dark:text-gray-100">
-                                            {{ item.import_batch?.name ?? 'Sin lote' }}
+                                        <p
+                                            class="text-sm font-semibold text-gray-800 dark:text-gray-100"
+                                        >
+                                            {{
+                                                item.import_batch?.name ??
+                                                'Sin lote'
+                                            }}
                                         </p>
-                                        <p class="truncate max-w-[160px] text-xs text-gray-400 dark:text-gray-500">
-                                            {{ item.import_batch?.file_name ?? '-' }}
+                                        <p
+                                            class="max-w-[160px] truncate text-xs text-gray-400 dark:text-gray-500"
+                                        >
+                                            {{
+                                                item.import_batch?.file_name ??
+                                                '-'
+                                            }}
                                         </p>
                                     </div>
                                 </div>
@@ -306,15 +377,23 @@ const deleteUpload = (upload: Upload) => {
 
                             <!-- Importado por -->
                             <td class="hidden px-5 py-3.5 sm:table-cell">
-                                <span class="text-sm text-gray-600 dark:text-gray-300">
+                                <span
+                                    class="text-sm text-gray-600 dark:text-gray-300"
+                                >
                                     {{ item.import_batch?.user?.name ?? '-' }}
                                 </span>
                             </td>
 
                             <!-- Tamaño -->
                             <td class="hidden px-5 py-3.5 md:table-cell">
-                                <span class="text-sm text-gray-500 dark:text-gray-400">
-                                    {{ formatFileSize(item.import_batch?.file_size) }}
+                                <span
+                                    class="text-sm text-gray-500 dark:text-gray-400"
+                                >
+                                    {{
+                                        formatFileSize(
+                                            item.import_batch?.file_size,
+                                        )
+                                    }}
                                 </span>
                             </td>
 
@@ -326,30 +405,48 @@ const deleteUpload = (upload: Upload) => {
                                 >
                                     {{ item.import_batch.total_rows }}
                                 </span>
-                                <span v-else class="text-sm text-gray-400">-</span>
+                                <span v-else class="text-sm text-gray-400"
+                                    >-</span
+                                >
                             </td>
 
                             <!-- Errores -->
                             <td class="hidden px-5 py-3.5 lg:table-cell">
                                 <span
-                                    v-if="item.import_batch?.failed_rows != null && item.import_batch.failed_rows > 0"
+                                    v-if="
+                                        item.import_batch?.failed_rows !=
+                                            null &&
+                                        item.import_batch.failed_rows > 0
+                                    "
                                     class="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-600 dark:bg-red-900/30 dark:text-red-400"
                                 >
                                     {{ item.import_batch.failed_rows }}
                                 </span>
                                 <span
-                                    v-else-if="item.import_batch?.failed_rows === 0"
+                                    v-else-if="
+                                        item.import_batch?.failed_rows === 0
+                                    "
                                     class="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
                                 >
                                     0
                                 </span>
-                                <span v-else class="text-sm text-gray-400">-</span>
+                                <span v-else class="text-sm text-gray-400"
+                                    >-</span
+                                >
                             </td>
 
                             <!-- Fecha -->
                             <td class="hidden px-5 py-3.5 sm:table-cell">
-                                <span class="text-sm text-gray-500 dark:text-gray-400">
-                                    {{ item.import_batch?.imported_at ? formatDate(item.import_batch.imported_at) : '-' }}
+                                <span
+                                    class="text-sm text-gray-500 dark:text-gray-400"
+                                >
+                                    {{
+                                        item.import_batch?.imported_at
+                                            ? formatDate(
+                                                  item.import_batch.imported_at,
+                                              )
+                                            : '-'
+                                    }}
                                 </span>
                             </td>
 
@@ -359,9 +456,11 @@ const deleteUpload = (upload: Upload) => {
                                     @click="deleteUpload(item)"
                                     title="Eliminar carga"
                                     class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full transition-all duration-200"
-                                    :class="activeDelete === item.id
-                                        ? 'bg-red-600 text-white shadow-md'
-                                        : 'text-red-500 hover:bg-red-600 hover:text-white'"
+                                    :class="
+                                        activeDelete === item.id
+                                            ? 'bg-red-600 text-white shadow-md'
+                                            : 'text-red-500 hover:bg-red-600 hover:text-white'
+                                    "
                                 >
                                     <Trash2 class="h-3.5 w-3.5" />
                                 </button>
@@ -372,10 +471,16 @@ const deleteUpload = (upload: Upload) => {
                         <tr v-if="uploads.data.length === 0">
                             <td colspan="10" class="px-6 py-16 text-center">
                                 <div class="flex flex-col items-center gap-3">
-                                    <div class="flex h-14 w-14 items-center justify-center rounded-full bg-[#087ab1]/10 dark:bg-[#087ab1]/20">
-                                        <FileSpreadsheet class="h-7 w-7 text-[#087ab1]/60" />
+                                    <div
+                                        class="flex h-14 w-14 items-center justify-center rounded-full bg-[#087ab1]/10 dark:bg-[#087ab1]/20"
+                                    >
+                                        <FileSpreadsheet
+                                            class="h-7 w-7 text-[#087ab1]/60"
+                                        />
                                     </div>
-                                    <p class="text-sm font-medium text-gray-500">
+                                    <p
+                                        class="text-sm font-medium text-gray-500"
+                                    >
                                         No hay archivos importados aún
                                     </p>
                                 </div>
@@ -386,7 +491,10 @@ const deleteUpload = (upload: Upload) => {
             </div>
 
             <!-- PAGINACIÓN -->
-            <div v-if="uploads.links && uploads.links.length > 3" class="flex justify-end">
+            <div
+                v-if="uploads.links && uploads.links.length > 3"
+                class="flex justify-end"
+            >
                 <nav class="inline-flex gap-1">
                     <template v-for="link in uploads.links" :key="link.label">
                         <a
@@ -394,9 +502,11 @@ const deleteUpload = (upload: Upload) => {
                             :href="link.url"
                             @click.prevent="goToPage(link.url)"
                             class="rounded-lg border px-3 py-1.5 text-sm font-medium transition-all"
-                            :class="link.active && isPageNumber(link.label)
-                                ? 'border-[#68c8fb] bg-[#68c8fb] text-white shadow-sm'
-                                : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300 hover:bg-gray-50 hover:text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400'"
+                            :class="
+                                link.active && isPageNumber(link.label)
+                                    ? 'border-[#68c8fb] bg-[#68c8fb] text-white shadow-sm'
+                                    : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300 hover:bg-gray-50 hover:text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400'
+                            "
                             v-html="translateLabel(link.label)"
                         />
                         <span
@@ -407,7 +517,6 @@ const deleteUpload = (upload: Upload) => {
                     </template>
                 </nav>
             </div>
-
         </div>
 
         <!-- MODAL -->
