@@ -315,7 +315,6 @@ const submit = () => {
                                         @dragover.prevent="isDragging = true"
                                         @dragleave.prevent="isDragging = false"
                                         @drop.prevent="onDrop"
-                                        @click="fileInput?.click()"
                                     >
                                         <div
                                             class="flex h-12 w-12 items-center justify-center rounded-xl transition"

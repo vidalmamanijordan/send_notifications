@@ -54,7 +54,7 @@ class NotificationBatchController extends Controller
             'offices' => Office::where('is_active', 1)
                 ->orderBy('level')
                 ->orderBy('name')
-                ->get(['id', 'name', 'code', 'email', 'cc_email', 'level', 'signature']),
+                ->get(['id', 'name', 'email', 'cc_email', 'level', 'signature']),
             'filters' => [
                 'academic_period_id' => $periodId ?? '',
                 'campus_id' => $request->campus_id ?? '',
@@ -248,11 +248,14 @@ class NotificationBatchController extends Controller
         // Guardar estado anterior
         $previousStatus = $notificationBatch->status;
 
-        // Bloquear si ya está completamente terminado
+        // Bloquear si está completado y no quedan omitidos por falta de correo
         if ($previousStatus === NotificationBatch::STATUS_COMPLETED) {
-            return back()->with([
-                'warning' => 'Este lote ya fue enviado completamente y solo queda como historial.',
-            ]);
+            $hasSkipped = $notificationBatch->details()->where('status', 'skipped')->exists();
+            if (! $hasSkipped) {
+                return back()->with([
+                    'warning' => 'Este lote ya fue enviado completamente y solo queda como historial.',
+                ]);
+            }
         }
 
         // Cambiar a processing
@@ -260,8 +263,11 @@ class NotificationBatchController extends Controller
             'status' => NotificationBatch::STATUS_PROCESSING,
         ]);
 
-        // Determinar si es reintento masivo
-        $isRetry = $previousStatus === NotificationBatch::STATUS_COMPLETED_WITH_ERRORS;
+        // Determinar si es reintento masivo (fallidos, omitidos o lote ya procesado anteriormente)
+        $isRetry = in_array($previousStatus, [
+            NotificationBatch::STATUS_COMPLETED,
+            NotificationBatch::STATUS_COMPLETED_WITH_ERRORS,
+        ]);
 
         // Ejecutar sincrónicamente (no requiere worker de colas)
         SendNotificationBatchJob::dispatchSync(
@@ -282,13 +288,6 @@ class NotificationBatchController extends Controller
         }
 
         $batch = NotificationBatch::find($detail->notification_batch_id);
-
-        // Si el lote ya está completado definitivamente
-        if ($batch->status === NotificationBatch::STATUS_COMPLETED) {
-            return back()->with([
-                'warning' => 'Este lote ya fue completado y solo queda como historial.',
-            ]);
-        }
 
         // VALIDACIÓN NUEVA (AQUÍ EXACTAMENTE)
         $detail->load('teacher');

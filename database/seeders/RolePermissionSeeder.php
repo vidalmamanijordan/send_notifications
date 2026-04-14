@@ -57,6 +57,7 @@ class RolePermissionSeeder extends Seeder
 
             // Docentes
             'teachers.viewAny',
+            'teachers.create',
             'teachers.update',
 
             // Cargas Excel

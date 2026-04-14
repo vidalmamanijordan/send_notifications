@@ -239,6 +239,9 @@ const previewSubject = ref('');
 const previewHtml = ref('');
 const previewEmails = ref<string[]>([]);
 const previewTeachers = ref<any[]>([]);
+const PREVIEWED_KEY = 'previewed_batch_ids';
+const storedPreviewed = JSON.parse(localStorage.getItem(PREVIEWED_KEY) ?? '[]') as number[];
+const previewedBatchIds = ref<Set<number>>(new Set(storedPreviewed));
 
 watch(
     () => props.batches?.data,
@@ -292,6 +295,9 @@ const previewEmail = async (item: NotificationBatch) => {
         previewEmails.value = response.data.emails ?? [];
         previewTeachers.value = response.data.teachers ?? [];
         previewBatchId.value = item.id;
+        const updated = new Set([...previewedBatchIds.value, item.id]);
+        previewedBatchIds.value = updated;
+        localStorage.setItem(PREVIEWED_KEY, JSON.stringify([...updated]));
 
         showPreviewModal.value = true;
     } catch (error) {
@@ -788,6 +794,7 @@ const resendNotification = async (detailId: number) => {
 
                                         <!-- PREVIEW EMAIL -->
                                         <button
+                                            v-if="item.notification_template_id && item.office_id"
                                             @click="previewEmail(item)"
                                             title="Vista previa del correo"
                                             :class="[
@@ -805,6 +812,7 @@ const resendNotification = async (detailId: number) => {
 
                                         <!-- ORQUESTADOR -->
                                         <button
+                                            v-if="item.notification_template_id && item.office_id && previewedBatchIds.has(item.id)"
                                             @click="openBatch(item.id)"
                                             title="Ver detalle del lote"
                                             :class="[
@@ -854,6 +862,8 @@ const resendNotification = async (detailId: number) => {
         <NotificationBatchModal
             :show="showModal"
             :batch="selectedBatch"
+            :sending="sending"
+            :preview-viewed="selectedBatch ? previewedBatchIds.has(selectedBatch.id) : false"
             @close="showModal = false"
             @paginate="paginateBatch"
             @send="sendNotifications"

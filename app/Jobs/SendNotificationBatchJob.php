@@ -76,9 +76,12 @@ class SendNotificationBatchJob implements ShouldQueue
             return;
         }
 
-        // 🔒 Si ya está completado totalmente → no hacer nada
+        // 🔒 Si ya está completado totalmente Y no quedan skipped → no hacer nada
         if ($batch->status === NotificationBatch::STATUS_COMPLETED) {
-            return;
+            $hasSkipped = $batch->details()->where('status', 'skipped')->exists();
+            if (! $hasSkipped) {
+                return;
+            }
         }
 
         // 🎯 Seleccionar qué detalles procesar
@@ -95,10 +98,10 @@ class SendNotificationBatchJob implements ShouldQueue
 
         } elseif ($this->isRetry) {
 
-            // Reintento masivo (solo fallidos)
+            // Reintento masivo (fallidos y omitidos por falta de correo)
             $details = $batch->details()
                 ->with(['teacher' => $withTeacher])
-                ->where('status', 'failed')
+                ->whereIn('status', ['failed', 'skipped'])
                 ->get();
 
         } else {
@@ -208,8 +211,11 @@ class SendNotificationBatchJob implements ShouldQueue
         $pending = $total - $sent - $skipped - $failed;
 
         if ($pending === 0) {
+            // Solo se marca como completado cuando todos fueron enviados exitosamente.
+            // Si quedan omitidos (sin correo) o fallidos, se deja como completed_with_errors
+            // para permitir reintentos cuando los correos sean registrados.
             $batch->update([
-                'status' => $failed > 0
+                'status' => ($failed > 0 || $skipped > 0)
                     ? NotificationBatch::STATUS_COMPLETED_WITH_ERRORS
                     : NotificationBatch::STATUS_COMPLETED,
             ]);

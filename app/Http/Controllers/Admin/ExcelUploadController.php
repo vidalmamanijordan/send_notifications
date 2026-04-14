@@ -12,13 +12,18 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class ExcelUploadController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         $periodId = session('selected_period_id')
             ?? AcademicPeriod::where('status', 'active')->value('id');
+        $campusId = $request->input('campus_id');
 
         $uploadsQuery = ExcelUpload::with([
             'academicPeriod',
@@ -31,14 +36,75 @@ class ExcelUploadController extends Controller
             $uploadsQuery->where('academic_period_id', $periodId);
         }
 
+        if ($campusId) {
+            $uploadsQuery->where('campus_id', $campusId);
+        }
+
         $activePeriod = AcademicPeriod::select('id', 'name')
             ->where('status', 'active')
             ->first();
 
         return Inertia::render('admin/excel-uploads/Index', [
-            'uploads' => $uploadsQuery->latest()->paginate(10),
+            'uploads' => $uploadsQuery->latest()->paginate(10)->withQueryString(),
             'activePeriod' => $activePeriod,
-            'campus' => Campus::select('id', 'name')->get(),
+            'campus' => Campus::select('id', 'name')->orderBy('name')->get(),
+            'filters' => ['campus_id' => $campusId],
+            'templateUrl' => route('admin.excel-uploads.template'),
+        ]);
+    }
+
+    public function downloadTemplate(): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        $spreadsheet = new Spreadsheet;
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Reporte');
+
+        // Columnas en el orden exacto que espera ExcelProcessorService (índices 0-10)
+        $headers = [
+            'A' => 'N°',
+            'B' => 'Docente',
+            'C' => 'DNI',
+            'D' => 'Facultad',
+            'E' => 'E.P.',
+            'F' => 'Ciclo',
+            'G' => 'Curso',
+            'H' => 'Grupo',
+            'I' => 'N° de rubros a evaluar',
+            'J' => 'N° de rubros evaluados',
+            'K' => 'N° de rubros vencidos',
+        ];
+
+        foreach ($headers as $col => $header) {
+            $sheet->setCellValue("{$col}1", $header);
+        }
+
+        $headerStyle = [
+            'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF'], 'size' => 11],
+            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '087AB1']],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
+        ];
+        $sheet->getStyle('A1:K1')->applyFromArray($headerStyle);
+        $sheet->getRowDimension(1)->setRowHeight(22);
+
+        $widths = ['A' => 6, 'B' => 36, 'C' => 12, 'D' => 24, 'E' => 24, 'F' => 10, 'G' => 36, 'H' => 10, 'I' => 20, 'J' => 14, 'K' => 14];
+        foreach ($widths as $col => $width) {
+            $sheet->getColumnDimension($col)->setWidth($width);
+        }
+
+        $exampleStyle = ['font' => ['italic' => true, 'color' => ['rgb' => '888888']]];
+        $example = ['1', 'APELLIDOS NOMBRES', '12345678', 'Facultad de Ingeniería', 'Ing. de Sistemas', '2025-I', 'Cálculo I', 'A', '5', '3', '2'];
+
+        foreach (array_keys($headers) as $i => $col) {
+            $sheet->setCellValue("{$col}2", $example[$i]);
+        }
+        $sheet->getStyle('A2:K2')->applyFromArray($exampleStyle);
+
+        $writer = new Xlsx($spreadsheet);
+
+        return response()->streamDownload(function () use ($writer) {
+            $writer->save('php://output');
+        }, 'plantilla_reporte_excel.xlsx', [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         ]);
     }
 

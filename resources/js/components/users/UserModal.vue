@@ -156,16 +156,13 @@ const roleLabels: Record<string, string> = {
                                     <User class="h-3.5 w-3.5 text-[#68c8fb]" />
                                     Nombre completo <span class="ml-auto font-normal text-red-400 normal-case">*</span>
                                 </label>
-                                <div class="relative">
-                                    <User class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                                    <input
-                                        v-model="form.name"
-                                        type="text"
-                                        placeholder="Ej: Juan Pérez"
-                                        class="w-full rounded-xl border border-gray-200 bg-gray-50 py-2.5 pr-3.5 pl-9 text-sm text-gray-900 placeholder-gray-400 transition-all focus:border-[#087ab1] focus:bg-white focus:ring-2 focus:ring-[#68c8fb]/20 focus:outline-none"
-                                        :class="{ 'border-red-300 bg-red-50 focus:border-red-400 focus:ring-red-100': form.errors.name }"
-                                    />
-                                </div>
+                                <input
+                                    v-model="form.name"
+                                    type="text"
+                                    placeholder="Ej: Juan Pérez"
+                                    class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 transition-all focus:border-[#087ab1] focus:bg-white focus:ring-2 focus:ring-[#68c8fb]/20 focus:outline-none"
+                                    :class="{ 'border-red-300 bg-red-50 focus:border-red-400 focus:ring-red-100': form.errors.name }"
+                                />
                                 <p v-if="form.errors.name" class="text-xs text-red-500">{{ form.errors.name }}</p>
                             </div>
 
@@ -175,16 +172,13 @@ const roleLabels: Record<string, string> = {
                                     <Mail class="h-3.5 w-3.5 text-[#68c8fb]" />
                                     Correo electrónico <span class="ml-auto font-normal text-red-400 normal-case">*</span>
                                 </label>
-                                <div class="relative">
-                                    <Mail class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                                    <input
-                                        v-model="form.email"
-                                        type="email"
-                                        placeholder="correo@ejemplo.com"
-                                        class="w-full rounded-xl border border-gray-200 bg-gray-50 py-2.5 pr-3.5 pl-9 text-sm text-gray-900 placeholder-gray-400 transition-all focus:border-[#087ab1] focus:bg-white focus:ring-2 focus:ring-[#68c8fb]/20 focus:outline-none"
-                                        :class="{ 'border-red-300 bg-red-50 focus:border-red-400 focus:ring-red-100': form.errors.email }"
-                                    />
-                                </div>
+                                <input
+                                    v-model="form.email"
+                                    type="email"
+                                    placeholder="correo@ejemplo.com"
+                                    class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 transition-all focus:border-[#087ab1] focus:bg-white focus:ring-2 focus:ring-[#68c8fb]/20 focus:outline-none"
+                                    :class="{ 'border-red-300 bg-red-50 focus:border-red-400 focus:ring-red-100': form.errors.email }"
+                                />
                                 <p v-if="form.errors.email" class="text-xs text-red-500">{{ form.errors.email }}</p>
                             </div>
 
@@ -195,10 +189,9 @@ const roleLabels: Record<string, string> = {
                                     Rol del sistema <span class="ml-auto font-normal text-red-400 normal-case">*</span>
                                 </label>
                                 <div class="relative">
-                                    <ShieldCheck class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
                                     <select
                                         v-model="form.role"
-                                        class="w-full appearance-none rounded-xl border border-gray-200 bg-gray-50 py-2.5 pr-8 pl-9 text-sm text-gray-900 transition-all focus:border-[#087ab1] focus:bg-white focus:ring-2 focus:ring-[#68c8fb]/20 focus:outline-none"
+                                        class="w-full appearance-none rounded-xl border border-gray-200 bg-gray-50 py-2.5 pr-8 pl-3.5 text-sm text-gray-900 transition-all focus:border-[#087ab1] focus:bg-white focus:ring-2 focus:ring-[#68c8fb]/20 focus:outline-none"
                                         :class="{ 'border-red-300 bg-red-50 focus:border-red-400 focus:ring-red-100': form.errors.role }"
                                     >
                                         <option value="" disabled>Seleccionar rol...</option>
@@ -242,12 +235,11 @@ const roleLabels: Record<string, string> = {
                                     <span v-else class="ml-auto font-normal text-gray-400 normal-case">(dejar vacío para no cambiar)</span>
                                 </label>
                                 <div class="relative">
-                                    <Lock class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
                                     <input
                                         v-model="form.password"
                                         :type="showPassword ? 'text' : 'password'"
                                         placeholder="Mínimo 8 caracteres"
-                                        class="w-full rounded-xl border border-gray-200 bg-gray-50 py-2.5 pr-10 pl-9 text-sm text-gray-900 placeholder-gray-400 transition-all focus:border-[#087ab1] focus:bg-white focus:ring-2 focus:ring-[#68c8fb]/20 focus:outline-none"
+                                        class="w-full rounded-xl border border-gray-200 bg-gray-50 py-2.5 pr-10 pl-3.5 text-sm text-gray-900 placeholder-gray-400 transition-all focus:border-[#087ab1] focus:bg-white focus:ring-2 focus:ring-[#68c8fb]/20 focus:outline-none"
                                         :class="{ 'border-red-300 bg-red-50 focus:border-red-400 focus:ring-red-100': form.errors.password }"
                                     />
                                     <button type="button" @click="showPassword = !showPassword" class="absolute top-1/2 right-3 -translate-y-1/2 text-gray-400 hover:text-gray-600">
@@ -265,12 +257,11 @@ const roleLabels: Record<string, string> = {
                                     Confirmar contraseña
                                 </label>
                                 <div class="relative">
-                                    <Lock class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
                                     <input
                                         v-model="form.password_confirmation"
                                         :type="showConfirm ? 'text' : 'password'"
                                         placeholder="Repite la contraseña"
-                                        class="w-full rounded-xl border border-gray-200 bg-gray-50 py-2.5 pr-10 pl-9 text-sm text-gray-900 placeholder-gray-400 transition-all focus:border-[#087ab1] focus:bg-white focus:ring-2 focus:ring-[#68c8fb]/20 focus:outline-none"
+                                        class="w-full rounded-xl border border-gray-200 bg-gray-50 py-2.5 pr-10 pl-3.5 text-sm text-gray-900 placeholder-gray-400 transition-all focus:border-[#087ab1] focus:bg-white focus:ring-2 focus:ring-[#68c8fb]/20 focus:outline-none"
                                     />
                                     <button type="button" @click="showConfirm = !showConfirm" class="absolute top-1/2 right-3 -translate-y-1/2 text-gray-400 hover:text-gray-600">
                                         <EyeOff v-if="showConfirm" class="h-4 w-4" />

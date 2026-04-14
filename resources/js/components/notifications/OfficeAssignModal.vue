@@ -13,7 +13,6 @@ import { computed, onUnmounted, ref, watch } from 'vue';
 interface Office {
     id: number;
     name: string;
-    code: string;
     email: string;
     cc_email?: string | null;
     level: number;
@@ -38,7 +37,6 @@ const filteredOffices = computed(() => {
     return props.offices.filter(
         (o) =>
             o.name.toLowerCase().includes(q) ||
-            o.code.toLowerCase().includes(q) ||
             o.email.toLowerCase().includes(q),
     );
 });
@@ -362,7 +360,7 @@ const save = () => {
                                             <p
                                                 class="truncate text-[10px] text-gray-400"
                                             >
-                                                {{ office.code }}
+                                                {{ office.email }}
                                             </p>
                                         </div>
 
@@ -509,33 +507,6 @@ const save = () => {
                                             <div
                                                 class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm"
                                             >
-                                                <!-- Código -->
-                                                <div
-                                                    class="flex items-center gap-3 border-b border-gray-100 px-3 py-2.5"
-                                                >
-                                                    <div
-                                                        class="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[#087ab1]/10"
-                                                    >
-                                                        <Building2
-                                                            class="h-3 w-3 text-[#087ab1]"
-                                                        />
-                                                    </div>
-                                                    <div class="min-w-0">
-                                                        <p
-                                                            class="text-[10px] text-gray-400"
-                                                        >
-                                                            Código
-                                                        </p>
-                                                        <p
-                                                            class="truncate text-xs font-semibold text-gray-700"
-                                                        >
-                                                            {{
-                                                                selectedOfficeData.code
-                                                            }}
-                                                        </p>
-                                                    </div>
-                                                </div>
-
                                                 <!-- Email principal -->
                                                 <div
                                                     class="flex items-center gap-3 px-3 py-2.5"

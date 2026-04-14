@@ -3,8 +3,8 @@ import ExcelUploadModal from '@/components/excel-uploads/ExcelUploadModal.vue';
 import { useSwal } from '@/composables/useSwal';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, router } from '@inertiajs/vue3';
-import { FileSpreadsheet, Trash2, Upload } from 'lucide-vue-next';
-import { ref } from 'vue';
+import { Download, FileSpreadsheet, Trash2, Upload } from 'lucide-vue-next';
+import { ref, watch } from 'vue';
 
 const Swal = useSwal();
 
@@ -43,7 +43,7 @@ interface PaginationLink {
 /* =========================
 Props
 ========================= */
-defineProps<{
+const props = defineProps<{
     uploads: {
         data: Upload[];
         links: PaginationLink[];
@@ -53,7 +53,22 @@ defineProps<{
     };
     activePeriod: { id: number; name: string } | null;
     campus: { id: number; name: string }[];
+    filters: { campus_id: string | null };
+    templateUrl: string;
 }>();
+
+/* =========================
+Filtro campus
+========================= */
+const selectedCampus = ref(props.filters.campus_id ?? '');
+
+watch(selectedCampus, (val) => {
+    router.get(
+        route('admin.excel-uploads.index'),
+        { campus_id: val || undefined },
+        { preserveState: true, preserveScroll: true, replace: true },
+    );
+});
 
 /* =========================
 Modal State
@@ -166,13 +181,34 @@ const deleteUpload = (upload: Upload) => {
                     </div>
                 </div>
 
-                <button
-                    @click="openCreateModal"
-                    class="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-linear-to-r from-[#087ab1] to-[#68c8fb] px-4 py-2.5 text-sm font-medium text-white shadow-md transition hover:from-[#066a98] hover:to-[#4fbdf5] active:scale-95"
-                >
-                    <Upload class="h-4 w-4" />
-                    Subir Excel
-                </button>
+                <div class="flex flex-wrap items-center gap-2">
+                    <!-- Filtro campus -->
+                    <select
+                        v-model="selectedCampus"
+                        class="rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-sm text-gray-700 shadow-sm transition focus:border-[#087ab1] focus:outline-none focus:ring-2 focus:ring-[#68c8fb]/20 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
+                        :class="selectedCampus ? 'border-[#087ab1] ring-2 ring-[#68c8fb]/20' : ''"
+                    >
+                        <option value="">Todos los campus</option>
+                        <option v-for="c in campus" :key="c.id" :value="String(c.id)">
+                            {{ c.name }}
+                        </option>
+                    </select>
+                    <a
+                        :href="templateUrl"
+                        title="Descargar plantilla Excel"
+                        class="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-medium text-emerald-700 transition hover:bg-emerald-100 dark:border-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400 dark:hover:bg-emerald-900/40"
+                    >
+                        <Download class="h-4 w-4" />
+                        Plantilla
+                    </a>
+                    <button
+                        @click="openCreateModal"
+                        class="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-linear-to-r from-[#087ab1] to-[#68c8fb] px-4 py-2.5 text-sm font-medium text-white shadow-md transition hover:from-[#066a98] hover:to-[#4fbdf5] active:scale-95"
+                    >
+                        <Upload class="h-4 w-4" />
+                        Subir Excel
+                    </button>
+                </div>
             </div>
 
             <!-- TABLA -->

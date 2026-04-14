@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import NotificationTemplateModal from '@/components/notifications/NotificationTemplateModal.vue';
+import NotificationTemplatePreviewModal from '@/components/notifications/NotificationTemplatePreviewModal.vue';
 import { useSwal } from '@/composables/useSwal';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, router } from '@inertiajs/vue3';
-import { FileText, Files, Pencil, Trash2 } from 'lucide-vue-next';
+import { Eye, FileText, Files, Pencil, Trash2 } from 'lucide-vue-next';
 import { ref } from 'vue';
 
 const Swal = useSwal();
@@ -28,23 +29,34 @@ defineProps<{
 }>();
 
 /**
- * Control modal
+ * Control modal crear/editar
  */
 const showModal = ref(false);
 const selectedTemplate = ref<Template | null>(null);
+
+/**
+ * Control modal vista previa
+ */
+const showPreviewModal = ref(false);
+const previewTemplate = ref<Template | null>(null);
+
+const openPreview = (template: Template) => {
+    previewTemplate.value = template;
+    showPreviewModal.value = true;
+};
 
 /**
  * Estado visual de botones activos
  */
 const activeAction = ref<{
     id: number | null;
-    type: 'edit' | 'delete' | null;
+    type: 'edit' | 'delete' | 'preview' | null;
 }>({
     id: null,
     type: null,
 });
 
-const setActive = (id: number, type: 'edit' | 'delete') => {
+const setActive = (id: number, type: 'edit' | 'delete' | 'preview') => {
     activeAction.value = { id, type };
 };
 
@@ -293,6 +305,24 @@ const goToPage = (url: string | null) => {
                                 <div
                                     class="flex items-center justify-end gap-1.5"
                                 >
+                                    <!-- VISTA PREVIA -->
+                                    <button
+                                        @click="
+                                            setActive(template.id, 'preview');
+                                            openPreview(template);
+                                        "
+                                        title="Vista previa del correo"
+                                        class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full transition-all duration-200"
+                                        :class="
+                                            activeAction.id === template.id &&
+                                            activeAction.type === 'preview'
+                                                ? 'bg-violet-600 text-white shadow-md'
+                                                : 'text-violet-500 hover:bg-violet-600 hover:text-white'
+                                        "
+                                    >
+                                        <Eye class="h-3.5 w-3.5" />
+                                    </button>
+
                                     <!-- EDITAR -->
                                     <button
                                         @click="openEdit(template)"
@@ -402,12 +432,22 @@ const goToPage = (url: string | null) => {
             </div>
         </div>
 
-        <!-- MODAL -->
+        <!-- MODAL crear/editar -->
         <NotificationTemplateModal
             :show="showModal"
             :template="selectedTemplate"
             @close="
                 showModal = false;
+                resetActive();
+            "
+        />
+
+        <!-- MODAL vista previa -->
+        <NotificationTemplatePreviewModal
+            :show="showPreviewModal"
+            :template="previewTemplate"
+            @close="
+                showPreviewModal = false;
                 resetActive();
             "
         />

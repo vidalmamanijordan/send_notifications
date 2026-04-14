@@ -200,35 +200,6 @@ const statusText = computed(() =>
                                         </p>
                                     </div>
 
-                                    <!-- CÓDIGO -->
-                                    <div class="space-y-1.5">
-                                        <label
-                                            class="flex items-center gap-1.5 text-xs font-semibold tracking-wide text-gray-500 uppercase"
-                                        >
-                                            Código
-                                            <span
-                                                class="ml-auto font-normal text-red-400 normal-case"
-                                                >Requerido</span
-                                            >
-                                        </label>
-                                        <input
-                                            v-model="form.code"
-                                            type="text"
-                                            placeholder="Ej: DIR-ACAD"
-                                            class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 transition-all focus:border-[#087ab1] focus:bg-white focus:ring-2 focus:ring-[#68c8fb]/20 focus:outline-none"
-                                            :class="{
-                                                'border-red-300 bg-red-50 focus:border-red-400 focus:ring-red-100':
-                                                    form.errors.code,
-                                            }"
-                                        />
-                                        <p
-                                            v-if="form.errors.code"
-                                            class="text-xs text-red-500"
-                                        >
-                                            {{ form.errors.code }}
-                                        </p>
-                                    </div>
-
                                     <!-- CORREO -->
                                     <div class="space-y-1.5">
                                         <label

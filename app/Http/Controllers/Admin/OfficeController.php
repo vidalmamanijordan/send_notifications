@@ -30,7 +30,6 @@ class OfficeController extends Controller
         abort_if(! auth()->user()->can('offices.create'), 403);
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'code' => 'required|string|max:255|unique:offices,code',
             'email' => 'required|email|max:255',
             'cc_email' => 'nullable|email|max:255',
             'level' => 'required|integer|min:1',
@@ -59,7 +58,6 @@ class OfficeController extends Controller
         abort_if(! auth()->user()->can('offices.update'), 403);
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'code' => 'required|string|max:255|unique:offices,code,'.$office->id,
             'email' => 'required|email|max:255',
             'cc_email' => 'nullable|email|max:255',
             'level' => 'required|integer|min:1',

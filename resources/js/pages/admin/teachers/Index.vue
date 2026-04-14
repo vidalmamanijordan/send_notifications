@@ -1,7 +1,9 @@
 <script setup lang="ts">
+import TeacherCreateModal from '@/components/teachers/TeacherCreateModal.vue';
+import TeacherImportModal from '@/components/teachers/TeacherImportModal.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
-import { AlertTriangle, Eye, FileSpreadsheet, Search, UserRound, X } from 'lucide-vue-next';
+import { AlertTriangle, Check, Download, Eye, FileSpreadsheet, Pencil, Plus, Search, Upload, UserRound, X } from 'lucide-vue-next';
 import { ref, watch } from 'vue';
 import { route } from 'ziggy-js';
 
@@ -35,7 +37,7 @@ const props = defineProps<{
         from?: number;
         to?: number;
     };
-    filters: { search: string };
+    filters: { search: string; no_email: boolean };
     currentPeriod: { id: number; name: string } | null;
 }>();
 
@@ -56,22 +58,36 @@ const formatDate = (date: string): string =>
     });
 
 /* =========================
-   Búsqueda
+   Modales
+========================= */
+const showImportModal = ref(false);
+const showCreateModal = ref(false);
+
+/* =========================
+   Búsqueda y filtros
 ========================= */
 const search = ref(props.filters.search ?? '');
+const noEmail = ref(props.filters.no_email ?? false);
+
+const applyFilters = () => {
+    router.get(
+        route('admin.teachers.index'),
+        {
+            search: search.value || undefined,
+            no_email: noEmail.value || undefined,
+        },
+        { preserveState: true, preserveScroll: true, replace: true },
+    );
+};
 
 let debounceTimer: ReturnType<typeof setTimeout>;
 
-watch(search, (val) => {
+watch(search, () => {
     clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(() => {
-        router.get(
-            route('admin.teachers.index'),
-            { search: val || undefined },
-            { preserveState: true, preserveScroll: true, replace: true },
-        );
-    }, 350);
+    debounceTimer = setTimeout(applyFilters, 350);
 });
+
+watch(noEmail, applyFilters);
 
 const clearSearch = () => {
     search.value = '';
@@ -83,6 +99,42 @@ const clearSearch = () => {
 const goToPage = (url: string | null) => {
     if (!url) return;
     router.visit(url, { preserveScroll: true, preserveState: true });
+};
+
+/* =========================
+   Edición inline de email
+========================= */
+const editingId = ref<number | null>(null);
+const editingEmail = ref('');
+const savingId = ref<number | null>(null);
+
+const startEdit = (item: Teacher) => {
+    editingId.value = item.id;
+    editingEmail.value = item.email ?? '';
+};
+
+const cancelEdit = () => {
+    editingId.value = null;
+    editingEmail.value = '';
+};
+
+const saveEmail = (item: Teacher) => {
+    savingId.value = item.id;
+    router.patch(
+        route('admin.teachers.update-email', item.id),
+        { email: editingEmail.value || null },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onSuccess: () => {
+                editingId.value = null;
+                editingEmail.value = '';
+            },
+            onFinish: () => {
+                savingId.value = null;
+            },
+        },
+    );
 };
 </script>
 
@@ -114,30 +166,74 @@ const goToPage = (url: string | null) => {
                     </div>
                 </div>
 
-                <!-- Aviso: docentes provienen del Excel -->
-                <div class="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 dark:border-amber-700 dark:bg-amber-900/20">
-                    <FileSpreadsheet class="h-4 w-4 shrink-0 text-amber-500" />
-                    <p class="text-xs text-amber-700 dark:text-amber-400">
-                        Los docentes se registran automáticamente al importar un reporte Excel.
-                    </p>
+                <!-- Acciones -->
+                <div class="flex items-center gap-2">
+                    <a
+                        :href="route('admin.teachers.template')"
+                        title="Descargar plantilla Excel"
+                        class="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-700 transition hover:bg-emerald-100 dark:border-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400 dark:hover:bg-emerald-900/40"
+                    >
+                        <Download class="h-4 w-4" />
+                        Plantilla
+                    </a>
+                    <button
+                        type="button"
+                        @click="showImportModal = true"
+                        class="inline-flex items-center gap-2 rounded-xl border border-[#087ab1]/30 bg-[#087ab1]/5 px-4 py-2 text-sm font-medium text-[#087ab1] transition hover:bg-[#087ab1]/10 dark:border-[#68c8fb]/30 dark:bg-[#68c8fb]/5 dark:text-[#68c8fb]"
+                    >
+                        <Upload class="h-4 w-4" />
+                        Importar
+                    </button>
+                    <button
+                        type="button"
+                        @click="showCreateModal = true"
+                        class="inline-flex items-center gap-2 rounded-xl bg-linear-to-r from-[#087ab1] to-[#68c8fb] px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-[#087ab1]/30 transition hover:opacity-90"
+                    >
+                        <Plus class="h-4 w-4" />
+                        Nuevo Docente
+                    </button>
                 </div>
             </div>
 
-            <!-- BUSCADOR -->
-            <div class="relative max-w-sm">
-                <Search class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                <input
-                    v-model="search"
-                    type="text"
-                    placeholder="Buscar por nombre, DNI o email..."
-                    class="w-full rounded-xl border border-gray-200 bg-white py-2.5 pl-9 pr-9 text-sm text-gray-800 shadow-sm transition focus:border-[#087ab1] focus:outline-none focus:ring-2 focus:ring-[#68c8fb]/20 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
-                />
+            <!-- BUSCADOR + FILTROS -->
+            <div class="flex flex-wrap items-center gap-3">
+                <div class="relative w-72">
+                    <Search class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                    <input
+                        v-model="search"
+                        type="text"
+                        placeholder="Buscar por nombre, DNI o email..."
+                        class="w-full rounded-xl border border-gray-200 bg-white py-2.5 pl-9 pr-9 text-sm text-gray-800 shadow-sm transition focus:border-[#087ab1] focus:outline-none focus:ring-2 focus:ring-[#68c8fb]/20 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+                    />
+                    <button
+                        v-if="search"
+                        @click="clearSearch"
+                        class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    >
+                        <X class="h-4 w-4" />
+                    </button>
+                </div>
+
+                <!-- Filtro: sin correo -->
                 <button
-                    v-if="search"
-                    @click="clearSearch"
-                    class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    type="button"
+                    @click="noEmail = !noEmail"
+                    class="inline-flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-medium transition"
+                    :class="noEmail
+                        ? 'border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-600 dark:bg-amber-900/30 dark:text-amber-400'
+                        : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400'"
                 >
-                    <X class="h-4 w-4" />
+                    <span
+                        class="h-2 w-2 rounded-full"
+                        :class="noEmail ? 'bg-amber-500' : 'bg-gray-300 dark:bg-gray-600'"
+                    />
+                    Sin correo
+                    <span
+                        v-if="noEmail"
+                        class="ml-1 rounded-full bg-amber-200 px-1.5 py-0.5 text-xs font-semibold text-amber-800 dark:bg-amber-800 dark:text-amber-200"
+                    >
+                        activo
+                    </span>
                 </button>
             </div>
 
@@ -215,9 +311,44 @@ const goToPage = (url: string | null) => {
 
                             <!-- Email -->
                             <td class="hidden px-5 py-3.5 md:table-cell">
-                                <span class="text-sm text-gray-500 dark:text-gray-400">
-                                    {{ item.email ?? '—' }}
-                                </span>
+                                <div v-if="editingId === item.id" class="flex items-center gap-1.5">
+                                    <input
+                                        v-model="editingEmail"
+                                        type="email"
+                                        placeholder="correo@ejemplo.com"
+                                        @keydown.enter="saveEmail(item)"
+                                        @keydown.escape="cancelEdit"
+                                        class="w-52 rounded-lg border border-[#087ab1] bg-white px-2.5 py-1 text-sm text-gray-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#68c8fb]/30 dark:border-[#68c8fb] dark:bg-gray-800 dark:text-gray-100"
+                                        autofocus
+                                    />
+                                    <button
+                                        @click="saveEmail(item)"
+                                        :disabled="savingId === item.id"
+                                        title="Guardar"
+                                        class="inline-flex h-7 w-7 items-center justify-center rounded-full text-emerald-600 transition hover:bg-emerald-100 disabled:opacity-50 dark:hover:bg-emerald-900/30"
+                                    >
+                                        <Check class="h-3.5 w-3.5" />
+                                    </button>
+                                    <button
+                                        @click="cancelEdit"
+                                        title="Cancelar"
+                                        class="inline-flex h-7 w-7 items-center justify-center rounded-full text-gray-400 transition hover:bg-gray-100 dark:hover:bg-gray-700"
+                                    >
+                                        <X class="h-3.5 w-3.5" />
+                                    </button>
+                                </div>
+                                <div v-else class="group/email flex items-center gap-1.5">
+                                    <span class="text-sm text-gray-500 dark:text-gray-400">
+                                        {{ item.email ?? '—' }}
+                                    </span>
+                                    <button
+                                        @click="startEdit(item)"
+                                        title="Editar correo"
+                                        class="inline-flex h-6 w-6 items-center justify-center rounded-full text-gray-300 opacity-0 transition hover:bg-[#087ab1]/10 hover:text-[#087ab1] group-hover/email:opacity-100 dark:text-gray-600 dark:hover:text-[#68c8fb]"
+                                    >
+                                        <Pencil class="h-3 w-3" />
+                                    </button>
+                                </div>
                             </td>
 
                             <!-- Rubros vencidos -->
@@ -303,5 +434,17 @@ const goToPage = (url: string | null) => {
             </div>
 
         </div>
+
+        <TeacherImportModal
+            :show="showImportModal"
+            @close="showImportModal = false"
+            @success="showImportModal = false"
+        />
+
+        <TeacherCreateModal
+            :show="showCreateModal"
+            @close="showCreateModal = false"
+            @success="showCreateModal = false"
+        />
     </AppLayout>
 </template>

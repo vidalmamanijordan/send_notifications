@@ -11,7 +11,6 @@ const Swal = useSwal();
 interface Office {
     id: number;
     name: string;
-    code: string;
     email: string;
     cc_email?: string | null;
     level: number;
@@ -54,7 +53,6 @@ const previewSignature = ref<string | null>(null);
 
 const initialForm = () => ({
     name: '',
-    code: '',
     email: '',
     cc_email: '',
     level: 1,
@@ -78,7 +76,6 @@ const openEdit = (office: Office) => {
 
     form.defaults({
         name: office.name,
-        code: office.code,
         email: office.email,
         cc_email: office.cc_email ?? '',
         level: office.level,
@@ -253,11 +250,6 @@ const isPageNumber = (label: string): boolean =>
                                 Nombre
                             </th>
                             <th
-                                class="hidden px-5 py-3.5 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase md:table-cell dark:text-gray-400"
-                            >
-                                Código
-                            </th>
-                            <th
                                 class="hidden px-5 py-3.5 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase lg:table-cell dark:text-gray-400"
                             >
                                 Correo
@@ -325,15 +317,6 @@ const isPageNumber = (label: string): boolean =>
                                         {{ office.name }}
                                     </span>
                                 </div>
-                            </td>
-
-                            <!-- Código -->
-                            <td class="hidden px-5 py-3.5 md:table-cell">
-                                <span
-                                    class="text-sm text-gray-600 dark:text-gray-300"
-                                >
-                                    {{ office.code }}
-                                </span>
                             </td>
 
                             <!-- Correo -->
@@ -431,7 +414,7 @@ const isPageNumber = (label: string): boolean =>
 
                         <!-- Sin datos -->
                         <tr v-if="offices.length === 0">
-                            <td colspan="7" class="px-6 py-16 text-center">
+                            <td colspan="6" class="px-6 py-16 text-center">
                                 <div class="flex flex-col items-center gap-3">
                                     <div
                                         class="flex h-14 w-14 items-center justify-center rounded-full bg-[#087ab1]/10 dark:bg-[#087ab1]/20"

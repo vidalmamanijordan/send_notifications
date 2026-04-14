@@ -60,9 +60,21 @@ Route::middleware(['auth', 'verified'])
         });
 
         // Docentes — escritura
-        Route::middleware('permission:teachers.update')
-            ->patch('teachers/{teacher}', [TeacherController::class, 'update'])
-            ->name('teachers.update');
+        Route::middleware('permission:teachers.update')->group(function () {
+            Route::patch('teachers/{teacher}', [TeacherController::class, 'update'])
+                ->name('teachers.update');
+            Route::patch('teachers/{teacher}/update-email', [TeacherController::class, 'updateEmail'])
+                ->name('teachers.update-email');
+            Route::get('teachers-template', [TeacherController::class, 'downloadTemplate'])
+                ->name('teachers.template');
+            Route::post('teachers-import', [TeacherController::class, 'import'])
+                ->name('teachers.import');
+        });
+
+        // Docentes — crear
+        Route::middleware('permission:teachers.create')
+            ->post('teachers', [TeacherController::class, 'store'])
+            ->name('teachers.store');
 
         // Campus
         Route::middleware('permission:campus.viewAny')->group(function () {
@@ -97,6 +109,8 @@ Route::middleware(['auth', 'verified'])
         Route::middleware('permission:excelUploads.viewAny')->group(function () {
             Route::resource('excel-uploads', ExcelUploadController::class)
                 ->only(['index', 'store', 'destroy']);
+            Route::get('excel-uploads-template', [ExcelUploadController::class, 'downloadTemplate'])
+                ->name('excel-uploads.template');
         });
 
         // Seguimiento — evaluaciones vencidas
@@ -114,6 +128,8 @@ Route::middleware(['auth', 'verified'])
         Route::middleware('permission:notificationTemplates.viewAny')->group(function () {
             Route::get('notification-templates/list', [NotificationBatchController::class, 'getTemplates'])
                 ->name('notification-templates.list');
+            Route::get('notification-templates/{notificationTemplate}/preview', [NotificationTemplateController::class, 'preview'])
+                ->name('notification-templates.preview');
             Route::resource('notification-templates', NotificationTemplateController::class)
                 ->except(['create', 'edit']);
         });

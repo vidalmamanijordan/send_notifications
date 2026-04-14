@@ -17,7 +17,7 @@ import {
     X,
     XCircle,
 } from 'lucide-vue-next';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 
 interface Teacher {
     full_name: string;
@@ -68,6 +68,7 @@ const props = defineProps<{
     show: boolean;
     batch: BatchResponse | null;
     sending?: boolean;
+    previewViewed?: boolean;
 }>();
 
 const emit = defineEmits(['close', 'paginate', 'send', 'resend']);
@@ -124,8 +125,33 @@ const sentPercent = computed(() => {
 });
 
 const canSend = computed(() =>
-    props.batch?.status === 'active' || props.batch?.status === 'draft',
+    props.batch?.status === 'active' ||
+    props.batch?.status === 'draft' ||
+    props.batch?.status === 'completed_with_errors',
 );
+
+const retryLabel = computed(() => {
+    const hasFailed = (props.batch?.failed_count ?? 0) > 0;
+    const hasSkipped = (props.batch?.skipped_count ?? 0) > 0;
+    if (hasSkipped && !hasFailed) return 'Completar envío';
+    return 'Reintentar fallidos';
+});
+
+const resendingId = ref<number | null>(null);
+
+const handleResend = (id: number) => {
+    resendingId.value = id;
+    emit('resend', id);
+};
+
+const isBeingProcessed = (detail: Detail): boolean => {
+    if (!props.sending) return false;
+    return (
+        detail.status === 'pending' ||
+        detail.status === 'failed' ||
+        (detail.status === 'skipped' && detail.has_email)
+    );
+};
 </script>
 
 <template>
@@ -359,6 +385,7 @@ const canSend = computed(() =>
                                         v-for="(d, index) in batch?.details.data ?? []"
                                         :key="d.id"
                                         class="transition-all duration-150 hover:bg-[#68c8fb]/2 hover:shadow-[inset_3px_0_0_#087ab1]"
+                                        :class="{ 'animate-pulse bg-[#087ab1]/3': isBeingProcessed(d) }"
                                     >
                                         <!-- Número -->
                                         <td class="px-5 py-3.5 text-sm text-gray-400">
@@ -422,33 +449,55 @@ const canSend = computed(() =>
 
                                         <!-- Estado -->
                                         <td class="px-5 py-3.5">
-                                            <span
-                                                class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium"
-                                                :class="detailStatusClass(d.status_label)"
-                                            >
-                                                <span class="h-1.5 w-1.5 rounded-full"
-                                                    :class="{
-                                                        'bg-amber-500 animate-pulse': d.status_label === 'Pendiente',
-                                                        'bg-emerald-500': d.status_label === 'Enviado',
-                                                        'bg-rose-500': d.status_label === 'Fallido',
-                                                        'bg-gray-400': d.status_label === 'Sin correo',
-                                                    }"
-                                                />
-                                                {{ d.status_label }}
-                                            </span>
+                                            <div class="flex items-center gap-2">
+                                                <span
+                                                    class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium"
+                                                    :class="detailStatusClass(d.status_label)"
+                                                >
+                                                    <span class="h-1.5 w-1.5 rounded-full"
+                                                        :class="{
+                                                            'bg-amber-500 animate-pulse': d.status_label === 'Pendiente',
+                                                            'bg-emerald-500': d.status_label === 'Enviado',
+                                                            'bg-rose-500': d.status_label === 'Fallido',
+                                                            'bg-gray-400': d.status_label === 'Sin correo',
+                                                        }"
+                                                    />
+                                                    {{ d.status_label }}
+                                                </span>
+                                                <svg
+                                                    v-if="isBeingProcessed(d)"
+                                                    class="h-3.5 w-3.5 shrink-0 animate-spin text-[#087ab1]"
+                                                    viewBox="0 0 24 24"
+                                                    fill="none"
+                                                >
+                                                    <circle class="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" />
+                                                    <path class="opacity-80" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                                                </svg>
+                                            </div>
                                         </td>
 
                                         <!-- Acción -->
                                         <td class="px-5 py-3.5 text-right">
-                                            <button
-                                                v-if="(d.status === 'failed' || d.status === 'skipped') && d.has_email"
-                                                class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium text-[#087ab1] ring-1 ring-[#087ab1]/30 transition hover:bg-[#087ab1] hover:text-white"
-                                                @click="emit('resend', d.id)"
-                                            >
-                                                <RotateCcw class="h-3 w-3" />
-                                                Reenviar
-                                            </button>
-                                            <span v-else class="text-xs text-gray-300">—</span>
+                                            <div v-if="isBeingProcessed(d)" class="flex justify-end">
+                                                <div class="h-5 w-5 animate-spin rounded-full border-2 border-[#087ab1]/20 border-t-[#087ab1]" />
+                                            </div>
+                                            <template v-else>
+                                                <button
+                                                    v-if="(d.status === 'failed' || d.status === 'skipped') && d.has_email"
+                                                    class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium text-[#087ab1] ring-1 ring-[#087ab1]/30 transition hover:bg-[#087ab1] hover:text-white"
+                                                    @click="handleResend(d.id)"
+                                                >
+                                                    <span
+                                                        :style="resendingId === d.id
+                                                            ? { display: 'inline-flex', animation: 'plane-shuttle 0.8s ease-in-out infinite' }
+                                                            : { display: 'inline-flex' }"
+                                                    >
+                                                        <Send class="h-3 w-3" />
+                                                    </span>
+                                                    Reenviar
+                                                </button>
+                                                <span v-else class="text-xs text-gray-300">—</span>
+                                            </template>
                                         </td>
                                     </tr>
 
@@ -533,34 +582,37 @@ const canSend = computed(() =>
                                     Cerrar
                                 </button>
                                 <button
-                                    v-if="canSend"
+                                    v-if="canSend && previewViewed"
                                     type="button"
                                     class="flex items-center gap-2 rounded-xl bg-linear-to-r from-[#087ab1] to-[#68c8fb] px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-[#087ab1]/30 transition-all hover:opacity-90 hover:shadow-lg hover:shadow-[#087ab1]/40 disabled:cursor-not-allowed disabled:opacity-60"
                                     :disabled="sending"
                                     @click="emit('send')"
                                 >
-                                    <svg
-                                        v-if="sending"
-                                        class="h-4 w-4 animate-spin"
-                                        viewBox="0 0 24 24"
-                                        fill="none"
+                                    <span
+                                        :style="sending
+                                            ? { display: 'inline-flex', animation: 'plane-shuttle 0.8s ease-in-out infinite' }
+                                            : { display: 'inline-flex' }"
                                     >
-                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
-                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                                    </svg>
-                                    <Send v-else class="h-4 w-4" />
+                                        <Send class="h-4 w-4" />
+                                    </span>
                                     {{ sending ? 'Enviando...' : 'Enviar notificaciones' }}
                                 </button>
 
                                 <button
-                                    v-else-if="(batch?.failed_count ?? 0) > 0 || (batch?.skipped_count ?? 0) > 0"
+                                    v-else-if="previewViewed && ((batch?.failed_count ?? 0) > 0 || (batch?.skipped_count ?? 0) > 0)"
                                     type="button"
                                     class="flex items-center gap-2 rounded-xl border border-[#087ab1]/30 bg-[#087ab1]/5 px-5 py-2.5 text-sm font-semibold text-[#087ab1] transition-all hover:bg-[#087ab1]/10 disabled:opacity-60"
                                     :disabled="sending"
                                     @click="emit('send')"
                                 >
-                                    <RotateCcw class="h-4 w-4" />
-                                    Reintentar fallidos
+                                    <span
+                                        :style="sending
+                                            ? { display: 'inline-flex', animation: 'plane-shuttle 0.8s ease-in-out infinite' }
+                                            : { display: 'inline-flex' }"
+                                    >
+                                        <Send class="h-4 w-4" />
+                                    </span>
+                                    {{ sending ? 'Enviando...' : retryLabel }}
                                 </button>
                             </div>
                         </div>
@@ -570,3 +622,13 @@ const canSend = computed(() =>
         </Dialog>
     </TransitionRoot>
 </template>
+
+<style>
+@keyframes plane-shuttle {
+    0%   { transform: translateX(0)    rotate(0deg);   }
+    40%  { transform: translateX(7px)  rotate(-12deg); }
+    50%  { transform: translateX(7px)  rotate(0deg);   }
+    90%  { transform: translateX(-7px) rotate(12deg);  }
+    100% { transform: translateX(0)    rotate(0deg);   }
+}
+</style>
