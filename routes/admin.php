@@ -10,7 +10,9 @@ use App\Http\Controllers\Admin\FacultyController;
 use App\Http\Controllers\Admin\NotificationBatchController;
 use App\Http\Controllers\Admin\NotificationTemplateController;
 use App\Http\Controllers\Admin\OfficeController;
+use App\Http\Controllers\Admin\PersonImportController;
 use App\Http\Controllers\Admin\ProgramController;
+use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\TeacherController;
 use App\Http\Controllers\Admin\UserController;
@@ -105,6 +107,28 @@ Route::middleware(['auth', 'verified'])
                 ->except(['create', 'edit', 'show']);
         });
 
+        // Importar personas (contactos de docentes)
+        Route::middleware('permission:teachers.viewAny')
+            ->get('persons', [PersonImportController::class, 'index'])
+            ->name('persons.index');
+
+        Route::middleware('permission:teachers.update')->group(function () {
+            Route::post('persons/import', [PersonImportController::class, 'import'])
+                ->name('persons.import');
+            Route::post('persons/quick-store', [PersonImportController::class, 'quickStore'])
+                ->name('persons.quick-store');
+            Route::post('persons/group', [PersonImportController::class, 'createGroup'])
+                ->name('persons.group');
+            Route::patch('persons/group/{notificationBatch}', [PersonImportController::class, 'updateGroup'])
+                ->name('persons.update-group');
+            Route::post('persons/group/{notificationBatch}/concretar', [PersonImportController::class, 'concretarGroup'])
+                ->name('persons.concretar-group');
+            Route::delete('persons/group/{notificationBatch}', [PersonImportController::class, 'deleteGroup'])
+                ->name('persons.delete-group');
+            Route::delete('persons/{personImport}', [PersonImportController::class, 'destroy'])
+                ->name('persons.destroy');
+        });
+
         // Importaciones Excel
         Route::middleware('permission:excelUploads.viewAny')->group(function () {
             Route::resource('excel-uploads', ExcelUploadController::class)
@@ -134,12 +158,19 @@ Route::middleware(['auth', 'verified'])
                 ->except(['create', 'edit']);
         });
 
+        // Reportes
+        Route::middleware('permission:notificationBatches.viewAny')
+            ->get('reports', [ReportController::class, 'index'])
+            ->name('reports.index');
+
         // Lotes de notificación — lectura y vista previa
         Route::middleware('permission:notificationBatches.viewAny')->group(function () {
             Route::resource('notification-batches', NotificationBatchController::class)
                 ->only(['index', 'show']);
             Route::get('notification-batches/{notificationBatch}/preview', [NotificationBatchController::class, 'preview'])
                 ->name('notification-batches.preview');
+            Route::delete('notification-batches/{notificationBatch}', [NotificationBatchController::class, 'destroy'])
+                ->name('notification-batches.destroy');
         });
 
         // Lotes — acciones específicas por permiso

@@ -125,11 +125,14 @@ class SendNotificationBatchJob implements ShouldQueue
                     continue;
                 }
 
-                $courses = TeacherEvaluationStatus::where('teacher_id', $teacher->id)
-                    ->where('import_batch_id', $batch->import_batch_id)
-                    ->where('expired_components', '>', 0)
-                    ->with(['course', 'campus'])
-                    ->get();
+                $courses = collect();
+                if ($batch->import_batch_id) {
+                    $courses = TeacherEvaluationStatus::where('teacher_id', $teacher->id)
+                        ->where('import_batch_id', $batch->import_batch_id)
+                        ->where('expired_components', '>', 0)
+                        ->with(['course', 'campus'])
+                        ->get();
+                }
 
                 $courseList = $courses->map(function ($c) {
                     return "- {$c->course?->name} (Ciclo: {$c->cycle}, Grupo: {$c->group}) - {$c->campus?->name}";

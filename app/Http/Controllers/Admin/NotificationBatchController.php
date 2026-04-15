@@ -32,14 +32,26 @@ class NotificationBatchController extends Controller
             'campus',
             'notificationTemplate',
             'office',
-        ]);
+        ])
+            ->where(function ($q) {
+                // Excluir grupos manuales en borrador (creados desde "Difusión a Docentes"
+                // pero aún no concretados). Se muestran solo tras presionar "Concretar lote".
+                $q->whereNot(function ($q2) {
+                    $q2->where('type', NotificationBatch::TYPE_FREE)
+                        ->whereNotNull('created_by')
+                        ->where('status', NotificationBatch::STATUS_DRAFT);
+                });
+            });
 
         if ($periodId) {
             $query->where('academic_period_id', $periodId);
         }
 
         if ($request->campus_id) {
-            $query->where('campus_id', $request->campus_id);
+            $query->where(function ($q) use ($request) {
+                $q->where('campus_id', $request->campus_id)
+                    ->orWhereNull('campus_id');
+            });
         }
 
         if ($request->status) {
@@ -158,13 +170,17 @@ class NotificationBatchController extends Controller
         $body = $notificationBatch->body ?? '';
 
         if ($body && $firstTeacher) {
-            $courses = TeacherEvaluationStatus::where('teacher_id', $firstTeacher['id'])
-                ->where('import_batch_id', $notificationBatch->import_batch_id)
-                ->where('expired_components', '>', 0)
-                ->with(['course', 'campus'])
-                ->get()
-                ->map(fn ($c) => "- {$c->course?->name} (Ciclo: {$c->cycle}, Grupo: {$c->group}) - {$c->campus?->name}")
-                ->implode("\n");
+            $courses = collect();
+            if ($notificationBatch->import_batch_id) {
+                $courses = TeacherEvaluationStatus::where('teacher_id', $firstTeacher['id'])
+                    ->where('import_batch_id', $notificationBatch->import_batch_id)
+                    ->where('expired_components', '>', 0)
+                    ->with(['course', 'campus'])
+                    ->get()
+                    ->map(fn ($c) => "- {$c->course?->name} (Ciclo: {$c->cycle}, Grupo: {$c->group}) - {$c->campus?->name}");
+            }
+
+            $courses = $courses->implode("\n");
 
             $body = str_replace(
                 ['{docente}', '{cursos}'],
@@ -378,5 +394,22 @@ class NotificationBatchController extends Controller
             ] : null,
             'details' => $details,
         ]);
+    }
+
+    public function destroy(NotificationBatch $notificationBatch): \Illuminate\Http\RedirectResponse
+    {
+        $nonDeletableStatuses = [
+            NotificationBatch::STATUS_PROCESSING,
+            NotificationBatch::STATUS_COMPLETED,
+            NotificationBatch::STATUS_COMPLETED_WITH_ERRORS,
+        ];
+
+        if (in_array($notificationBatch->status, $nonDeletableStatuses)) {
+            return back()->with('warning', 'No puedes eliminar un lote que ya fue enviado o está en proceso.');
+        }
+
+        $notificationBatch->delete();
+
+        return back()->with('success', "Lote \"{$notificationBatch->name}\" eliminado correctamente.");
     }
 }

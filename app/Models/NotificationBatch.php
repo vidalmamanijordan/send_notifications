@@ -3,17 +3,30 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class NotificationBatch extends Model
 {
+    use SoftDeletes;
+
+    public const TYPE_RUBRICS = 'rubrics';
+
+    public const TYPE_FREE = 'free';
+
     public const STATUS_DRAFT = 'draft';
+
     public const STATUS_ACTIVE = 'active';
+
     public const STATUS_PROCESSING = 'processing';
+
     public const STATUS_COMPLETED = 'completed';
+
     public const STATUS_COMPLETED_WITH_ERRORS = 'completed_with_errors';
+
     public const STATUS_CANCELLED = 'cancelled';
 
     protected $fillable = [
+        'type',
         'import_batch_id',
         'academic_period_id',
         'campus_id',
@@ -24,8 +37,14 @@ class NotificationBatch extends Model
         'name',
         'description',
         'execution_date',
-        'status'
+        'status',
+        'created_by',
     ];
+
+    public function createdBy()
+    {
+        return $this->belongsTo(\App\Models\User::class, 'created_by');
+    }
 
     public function academicPeriod()
     {

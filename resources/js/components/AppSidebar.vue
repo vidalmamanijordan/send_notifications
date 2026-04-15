@@ -12,6 +12,7 @@ import {
 import { type AppPageProps, type NavItem } from '@/types';
 import { Link, router, usePage } from '@inertiajs/vue3';
 import {
+    BarChart2,
     BarChart3,
     Bell,
     BookOpen,
@@ -114,16 +115,24 @@ const mainNavItems = computed<NavItem[]>(() => {
         });
     }
 
+    const evalChildren: NavItem[] = [];
     if (can('excelUploads.viewAny')) {
+        evalChildren.push({
+            title: 'Importar Rub. Venc.',
+            route: 'admin.excel-uploads.index',
+        });
+    }
+    if (can('teachers.viewAny')) {
+        evalChildren.push({
+            title: 'Difusión a Docentes',
+            route: 'admin.persons.index',
+        });
+    }
+    if (evalChildren.length > 0) {
         items.push({
             title: 'Evaluaciones',
             icon: BookOpen,
-            children: [
-                {
-                    title: 'Importar Rub. Venc.',
-                    route: 'admin.excel-uploads.index',
-                },
-            ],
+            children: evalChildren,
         });
     }
 
@@ -161,6 +170,14 @@ const mainNavItems = computed<NavItem[]>(() => {
             title: 'Notificaciones',
             icon: Bell,
             children: notifChildren,
+        });
+    }
+
+    if (can('notificationBatches.viewAny')) {
+        items.push({
+            title: 'Reportes',
+            icon: BarChart2,
+            route: 'admin.reports.index',
         });
     }
 

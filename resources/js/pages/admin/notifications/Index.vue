@@ -3,6 +3,7 @@ import AttachTemplateModal from '@/components/notifications/AttachTemplateModal.
 import EmailPreviewModal from '@/components/notifications/EmailPreviewModal.vue';
 import NotificationBatchModal from '@/components/notifications/NotificationBatchModal.vue';
 import OfficeAssignModal from '@/components/notifications/OfficeAssignModal.vue';
+import { useSwal } from '@/composables/useSwal';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, router } from '@inertiajs/vue3';
 import axios from 'axios';
@@ -14,10 +15,13 @@ import {
     FileText,
     Filter,
     Mail,
+    Trash2,
     Wand2,
     X,
 } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
+
+const Swal = useSwal();
 
 /* =========================
    TYPES
@@ -25,6 +29,7 @@ import { computed, ref, watch } from 'vue';
 interface NotificationBatch {
     id: number;
     name: string;
+    type: string;
     status: string;
     execution_date: string;
     notification_template_id?: number | null;
@@ -411,6 +416,28 @@ const sendNotifications = async () => {
     }
 };
 
+/* =========================
+   DELETE BATCH
+========================= */
+const deleteBatch = (item: NotificationBatch) => {
+    Swal.fire({
+        title: '¿Eliminar lote?',
+        html: `Se eliminará el lote <strong>${item.name}</strong>. Esta acción no se puede deshacer.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#dc2626',
+        cancelButtonColor: '#6b7280',
+        focusCancel: true,
+    }).then((result) => {
+        if (!result.isConfirmed) return;
+        router.delete(route('admin.notification-batches.destroy', item.id), {
+            preserveScroll: true,
+        });
+    });
+};
+
 const resendNotification = async (detailId: number) => {
     if (!selectedBatch.value?.id) return;
 
@@ -635,17 +662,27 @@ const resendNotification = async (detailId: number) => {
                                 <td class="px-5 py-3.5">
                                     <div class="flex items-center gap-2.5">
                                         <div
-                                            class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#087ab1]/10"
+                                            class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
+                                            :class="item.type === 'free' ? 'bg-violet-100 dark:bg-violet-900/30' : 'bg-[#087ab1]/10'"
                                         >
                                             <Bell
-                                                class="h-4 w-4 text-[#087ab1]"
+                                                class="h-4 w-4"
+                                                :class="item.type === 'free' ? 'text-violet-500' : 'text-[#087ab1]'"
                                             />
                                         </div>
-                                        <span
-                                            class="text-sm font-semibold text-gray-800 dark:text-gray-100"
-                                        >
-                                            {{ item.name }}
-                                        </span>
+                                        <div class="flex flex-col gap-0.5">
+                                            <span
+                                                class="text-sm font-semibold text-gray-800 dark:text-gray-100"
+                                            >
+                                                {{ item.name }}
+                                            </span>
+                                            <span
+                                                v-if="item.type === 'free'"
+                                                class="inline-flex w-fit items-center rounded-full bg-violet-100 px-1.5 py-0 text-xs font-medium text-violet-700 dark:bg-violet-900/40 dark:text-violet-300"
+                                            >
+                                                Libre
+                                            </span>
+                                        </div>
                                     </div>
                                 </td>
 
@@ -758,8 +795,9 @@ const resendNotification = async (detailId: number) => {
                                     <div
                                         class="flex items-center justify-end gap-1"
                                     >
-                                        <!-- ENLAZAR PLANTILLA -->
+                                        <!-- ENLAZAR PLANTILLA — solo si el lote aún es editable -->
                                         <button
+                                            v-if="['draft', 'active'].includes(item.status)"
                                             @click="openAttachTemplate(item)"
                                             title="Enlazar plantilla"
                                             :class="[
@@ -775,8 +813,9 @@ const resendNotification = async (detailId: number) => {
                                             />
                                         </button>
 
-                                        <!-- ASIGNAR OFICINA -->
+                                        <!-- ASIGNAR OFICINA — editable + plantilla enlazada -->
                                         <button
+                                            v-if="['draft', 'active'].includes(item.status) && item.notification_template_id"
                                             @click="openOfficeModal(item)"
                                             title="Asignar oficina"
                                             :class="[
@@ -792,7 +831,7 @@ const resendNotification = async (detailId: number) => {
                                             />
                                         </button>
 
-                                        <!-- PREVIEW EMAIL -->
+                                        <!-- PREVIEW EMAIL — plantilla + oficina asignadas -->
                                         <button
                                             v-if="item.notification_template_id && item.office_id"
                                             @click="previewEmail(item)"
@@ -810,9 +849,9 @@ const resendNotification = async (detailId: number) => {
                                             />
                                         </button>
 
-                                        <!-- ORQUESTADOR -->
+                                        <!-- VER DETALLE — requiere preview (o ya fue enviado) -->
                                         <button
-                                            v-if="item.notification_template_id && item.office_id && previewedBatchIds.has(item.id)"
+                                            v-if="item.notification_template_id && item.office_id && (previewedBatchIds.has(item.id) || ['processing', 'completed', 'completed_with_errors'].includes(item.status))"
                                             @click="openBatch(item.id)"
                                             title="Ver detalle del lote"
                                             :class="[
@@ -826,6 +865,16 @@ const resendNotification = async (detailId: number) => {
                                                 class="h-3.5 w-3.5"
                                                 :class="showModal && selectedBatch?.id === item.id ? 'animate-spin' : ''"
                                             />
+                                        </button>
+
+                                        <!-- ELIMINAR — solo antes de enviar -->
+                                        <button
+                                            v-if="['draft', 'active'].includes(item.status)"
+                                            @click="deleteBatch(item)"
+                                            title="Eliminar lote"
+                                            class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-red-400 transition-all duration-200 hover:bg-red-500 hover:text-white"
+                                        >
+                                            <Trash2 class="h-3.5 w-3.5" />
                                         </button>
                                     </div>
                                 </td>
