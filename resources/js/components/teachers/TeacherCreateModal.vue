@@ -18,6 +18,7 @@ const form = useForm({
     dni: '',
     full_name: '',
     email: '',
+    phone: '',
 });
 
 watch(
@@ -143,6 +144,23 @@ const submit = () => {
                                     :class="{ 'border-red-300 bg-red-50': form.errors.email }"
                                 />
                                 <p v-if="form.errors.email" class="text-xs text-red-500">{{ form.errors.email }}</p>
+                            </div>
+
+                            <!-- Celular -->
+                            <div class="space-y-1.5">
+                                <label class="text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400">
+                                    Celular <span class="font-normal text-gray-400 normal-case">Opcional</span>
+                                </label>
+                                <input
+                                    v-model="form.phone"
+                                    type="text"
+                                    placeholder="Ej: 987654321"
+                                    maxlength="20"
+                                    @keydown.enter="submit"
+                                    class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5 text-sm text-gray-900 transition focus:border-[#087ab1] focus:bg-white focus:ring-2 focus:ring-[#68c8fb]/20 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+                                    :class="{ 'border-red-300 bg-red-50': form.errors.phone }"
+                                />
+                                <p v-if="form.errors.phone" class="text-xs text-red-500">{{ form.errors.phone }}</p>
                             </div>
 
                         </div>

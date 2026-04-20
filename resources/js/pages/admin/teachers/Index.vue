@@ -15,6 +15,7 @@ interface Teacher {
     dni: string;
     full_name: string;
     email: string | null;
+    phone: string | null;
     is_active: boolean;
     created_at: string;
     evaluation_statuses_sum_expired_components: number | null;
@@ -254,6 +255,9 @@ const saveEmail = (item: Teacher) => {
                             <th class="hidden px-5 py-3.5 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase md:table-cell dark:text-gray-400">
                                 Email
                             </th>
+                            <th class="hidden px-5 py-3.5 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase xl:table-cell dark:text-gray-400">
+                                Celular
+                            </th>
                             <th class="hidden px-5 py-3.5 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase lg:table-cell dark:text-gray-400">
                                 Rubros vencidos
                             </th>
@@ -351,6 +355,13 @@ const saveEmail = (item: Teacher) => {
                                 </div>
                             </td>
 
+                            <!-- Celular -->
+                            <td class="hidden px-5 py-3.5 xl:table-cell">
+                                <span class="text-sm text-gray-500 dark:text-gray-400">
+                                    {{ item.phone ?? '—' }}
+                                </span>
+                            </td>
+
                             <!-- Rubros vencidos -->
                             <td class="hidden px-5 py-3.5 lg:table-cell">
                                 <template v-if="currentPeriod">
@@ -392,7 +403,7 @@ const saveEmail = (item: Teacher) => {
 
                         <!-- Sin datos -->
                         <tr v-if="teachers.data.length === 0">
-                            <td colspan="7" class="px-6 py-16 text-center">
+                            <td colspan="8" class="px-6 py-16 text-center">
                                 <div class="flex flex-col items-center gap-3">
                                     <div class="flex h-14 w-14 items-center justify-center rounded-full bg-[#087ab1]/10 dark:bg-[#087ab1]/20">
                                         <UserRound class="h-7 w-7 text-[#087ab1]/60" />

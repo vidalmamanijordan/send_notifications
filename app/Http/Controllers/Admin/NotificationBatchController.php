@@ -33,6 +33,7 @@ class NotificationBatchController extends Controller
             'notificationTemplate',
             'office',
         ])
+            ->withCount('details')
             ->where(function ($q) {
                 // Excluir grupos manuales en borrador (creados desde "Difusión a Docentes"
                 // pero aún no concretados). Se muestran solo tras presionar "Concretar lote".
@@ -58,6 +59,13 @@ class NotificationBatchController extends Controller
             $query->where('status', $request->status);
         }
 
+        $kpiSmallBatches = NotificationBatch::query()
+            ->when($periodId, fn ($q) => $q->where('academic_period_id', $periodId))
+            ->whereRaw(
+                '(SELECT COUNT(*) FROM notification_batch_details WHERE notification_batch_details.notification_batch_id = notification_batches.id) <= 100'
+            )
+            ->count();
+
         return Inertia::render('admin/notifications/Index', [
             'batches' => $query->latest()->paginate(10)->withQueryString(),
             'academicPeriods' => AcademicPeriod::select('id', 'name')->get(),
@@ -72,6 +80,7 @@ class NotificationBatchController extends Controller
                 'campus_id' => $request->campus_id ?? '',
                 'status' => $request->status ?? '',
             ],
+            'kpiSmallBatches' => $kpiSmallBatches,
         ]);
     }
 

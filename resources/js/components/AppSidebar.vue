@@ -18,6 +18,7 @@ import {
     BookOpen,
     ChevronDown,
     ChevronRight,
+    HelpCircle,
     LayoutGrid,
     LogOut,
     School,
@@ -472,15 +473,23 @@ const handleLogout = () => {
                     </button>
                 </div>
 
-                <!-- Settings link -->
-                <Link
-                    v-if="!isCollapsed"
-                    :href="route('profile.edit')"
-                    class="mt-1 flex items-center gap-2 rounded-xl px-3 py-2 text-xs text-white/40 transition-all hover:bg-white/6 hover:text-white/70"
-                >
-                    <User class="h-3.5 w-3.5" />
-                    Configuración de perfil
-                </Link>
+                <!-- Settings + Help links -->
+                <div v-if="!isCollapsed" class="mt-1 flex items-center gap-1">
+                    <Link
+                        :href="route('profile.edit')"
+                        class="flex flex-1 items-center gap-2 rounded-xl px-3 py-2 text-xs text-white/40 transition-all hover:bg-white/6 hover:text-white/70"
+                    >
+                        <User class="h-3.5 w-3.5" />
+                        Configuración de perfil
+                    </Link>
+                    <Link
+                        :href="route('help')"
+                        title="Ayuda & Soporte TI"
+                        class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-white/40 transition-all hover:bg-white/10 hover:text-[#68c8fb]"
+                    >
+                        <HelpCircle class="h-4 w-4" />
+                    </Link>
+                </div>
             </SidebarFooter>
         </div>
     </Sidebar>

@@ -8,13 +8,17 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, router } from '@inertiajs/vue3';
 import axios from 'axios';
 import {
+    AlertTriangle,
     Bell,
     Building2,
+    CalendarDays,
     Eraser,
     Eye,
     FileText,
     Filter,
+    LayoutList,
     Mail,
+    Tag,
     Trash2,
     Wand2,
     X,
@@ -37,6 +41,7 @@ interface NotificationBatch {
     office?: { id: number; name: string; email: string; signature?: string };
     academic_period?: { id: number; name: string };
     campus?: { id: number; name: string };
+    details_count?: number;
 }
 
 interface PaginationLink {
@@ -84,6 +89,7 @@ const props = defineProps<{
         campus_id?: string;
         status?: string;
     };
+    kpiSmallBatches: number;
 }>();
 
 /* =========================
@@ -509,78 +515,185 @@ const resendNotification = async (detailId: number) => {
                 </div>
             </div>
 
-            <!-- FILTROS -->
-            <div
-                class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-900"
-            >
-                <div
-                    class="flex items-center gap-2 border-b border-gray-100 bg-linear-to-r from-gray-50 to-gray-100 px-5 py-3 dark:border-gray-700 dark:from-gray-800 dark:to-gray-800"
-                >
-                    <Filter class="h-3.5 w-3.5 text-[#087ab1]" />
-                    <span
-                        class="text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400"
-                        >Filtros</span
-                    >
+            <!-- FILTROS + ADVERTENCIA KPI -->
+            <div class="flex flex-col gap-4 lg:flex-row lg:items-start">
+
+                <!-- FILTROS -->
+                <div class="group relative flex-1 overflow-hidden rounded-2xl border border-sky-100 bg-linear-to-br from-sky-50 to-white p-5 shadow-sm transition hover:shadow-md dark:border-sky-900/30 dark:from-sky-900/20 dark:to-gray-800">
+
+                    <!-- Cabecera -->
+                    <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
+                        <div class="flex items-center gap-3">
+                            <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-sky-100 shadow-inner dark:bg-sky-800/40">
+                                <Filter class="h-5 w-5 text-[#087ab1] dark:text-sky-400" />
+                            </div>
+                            <div>
+                                <p class="text-xs font-medium tracking-wide text-[#087ab1] uppercase dark:text-sky-400">
+                                    Filtrar lotes
+                                </p>
+                                <p class="mt-0.5 text-sm font-semibold text-gray-800 dark:text-gray-100">
+                                    {{ hasActiveFilters ? 'Filtros aplicados' : 'Todos los lotes' }}
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Badge activo + botones -->
+                        <div class="flex items-center gap-2">
+                            <span
+                                v-if="hasActiveFilters"
+                                class="inline-flex items-center gap-1 rounded-full bg-[#087ab1] px-2.5 py-1 text-xs font-semibold text-white shadow-sm"
+                            >
+                                <Filter class="h-3 w-3" />
+                                Activo
+                            </span>
+                            <button
+                                v-if="hasActiveFilters"
+                                @click="clearFilters"
+                                class="inline-flex cursor-pointer items-center gap-1 rounded-full border border-sky-200 bg-white px-2.5 py-1 text-xs font-medium text-sky-700 shadow-sm transition hover:bg-sky-50 active:scale-95 dark:border-sky-700 dark:bg-gray-800 dark:text-sky-300 dark:hover:bg-sky-900/30"
+                            >
+                                <X class="h-3 w-3" />
+                                Limpiar
+                            </button>
+                            <button
+                                @click="applyFilters"
+                                class="inline-flex cursor-pointer items-center gap-1.5 rounded-full bg-[#087ab1] px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-[#066a98] active:scale-95"
+                            >
+                                <Filter class="h-3 w-3" />
+                                Aplicar
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Selectores -->
+                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+
+                        <!-- Periodo académico -->
+                        <div>
+                            <label class="mb-1.5 flex items-center gap-1.5 text-xs font-medium tracking-wide text-[#087ab1] uppercase dark:text-sky-400">
+                                <CalendarDays class="h-3.5 w-3.5" />
+                                Periodo académico
+                            </label>
+                            <div class="relative">
+                                <select
+                                    v-model="filters.academic_period_id"
+                                    class="w-full appearance-none rounded-xl border py-2.5 pl-4 pr-9 text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-[#087ab1]/30"
+                                    :class="filters.academic_period_id
+                                        ? 'border-[#087ab1] bg-[#087ab1]/5 text-[#087ab1] dark:border-[#087ab1]/60 dark:bg-[#087ab1]/10 dark:text-sky-300'
+                                        : 'border-sky-100 bg-white text-gray-700 hover:border-sky-200 dark:border-sky-800/50 dark:bg-gray-800 dark:text-gray-300'"
+                                >
+                                    <option value="">Todos los periodos</option>
+                                    <option v-for="p in academicPeriods" :key="p.id" :value="p.id">
+                                        {{ p.name }}
+                                    </option>
+                                </select>
+                                <div class="pointer-events-none absolute inset-y-0 right-3 flex items-center">
+                                    <svg class="h-4 w-4 text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Campus -->
+                        <div>
+                            <label class="mb-1.5 flex items-center gap-1.5 text-xs font-medium tracking-wide text-[#087ab1] uppercase dark:text-sky-400">
+                                <Building2 class="h-3.5 w-3.5" />
+                                Campus
+                            </label>
+                            <div class="relative">
+                                <select
+                                    v-model="filters.campus_id"
+                                    class="w-full appearance-none rounded-xl border py-2.5 pl-4 pr-9 text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-[#087ab1]/30"
+                                    :class="filters.campus_id
+                                        ? 'border-[#087ab1] bg-[#087ab1]/5 text-[#087ab1] dark:border-[#087ab1]/60 dark:bg-[#087ab1]/10 dark:text-sky-300'
+                                        : 'border-sky-100 bg-white text-gray-700 hover:border-sky-200 dark:border-sky-800/50 dark:bg-gray-800 dark:text-gray-300'"
+                                >
+                                    <option value="">Todos los campus</option>
+                                    <option v-for="c in campus" :key="c.id" :value="c.id">
+                                        {{ c.name }}
+                                    </option>
+                                </select>
+                                <div class="pointer-events-none absolute inset-y-0 right-3 flex items-center">
+                                    <svg class="h-4 w-4 text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Estado -->
+                        <div>
+                            <label class="mb-1.5 flex items-center gap-1.5 text-xs font-medium tracking-wide text-[#087ab1] uppercase dark:text-sky-400">
+                                <Tag class="h-3.5 w-3.5" />
+                                Estado
+                            </label>
+                            <div class="relative">
+                                <select
+                                    v-model="filters.status"
+                                    class="w-full appearance-none rounded-xl border py-2.5 pl-4 pr-9 text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-[#087ab1]/30"
+                                    :class="filters.status
+                                        ? 'border-[#087ab1] bg-[#087ab1]/5 text-[#087ab1] dark:border-[#087ab1]/60 dark:bg-[#087ab1]/10 dark:text-sky-300'
+                                        : 'border-sky-100 bg-white text-gray-700 hover:border-sky-200 dark:border-sky-800/50 dark:bg-gray-800 dark:text-gray-300'"
+                                >
+                                    <option value="">Todos los estados</option>
+                                    <option value="draft">Borrador</option>
+                                    <option value="active">Activo</option>
+                                    <option value="processing">Procesando</option>
+                                    <option value="completed">Completado</option>
+                                    <option value="completed_with_errors">Completado con errores</option>
+                                    <option value="failed">Fallido</option>
+                                </select>
+                                <div class="pointer-events-none absolute inset-y-0 right-3 flex items-center">
+                                    <svg class="h-4 w-4 text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- Breadcrumb cuando hay filtros activos -->
+                    <div v-if="hasActiveFilters" class="mt-4 flex flex-wrap items-center gap-1.5 border-t border-sky-100 pt-4 text-xs dark:border-sky-900/30">
+                        <span class="text-gray-400 dark:text-gray-500">Mostrando:</span>
+                        <span v-if="filters.academic_period_id" class="inline-flex items-center gap-1 rounded-full bg-[#087ab1]/10 px-2.5 py-0.5 font-semibold text-[#087ab1] dark:bg-[#087ab1]/20 dark:text-sky-300">
+                            <CalendarDays class="h-3 w-3" />
+                            {{ academicPeriods.find(p => String(p.id) === String(filters.academic_period_id))?.name ?? 'Periodo seleccionado' }}
+                        </span>
+                        <span v-if="filters.campus_id" class="inline-flex items-center gap-1 rounded-full bg-[#087ab1]/10 px-2.5 py-0.5 font-semibold text-[#087ab1] dark:bg-[#087ab1]/20 dark:text-sky-300">
+                            <Building2 class="h-3 w-3" />
+                            {{ campus.find(c => String(c.id) === String(filters.campus_id))?.name ?? 'Campus seleccionado' }}
+                        </span>
+                        <span v-if="filters.status" class="inline-flex items-center gap-1 rounded-full bg-[#087ab1]/10 px-2.5 py-0.5 font-semibold text-[#087ab1] dark:bg-[#087ab1]/20 dark:text-sky-300">
+                            <Tag class="h-3 w-3" />
+                            {{ translateStatus(filters.status) }}
+                        </span>
+                    </div>
+
                 </div>
+                <!-- fin FILTROS -->
 
-                <div class="flex flex-wrap items-center gap-3 px-5 py-4">
-                    <select
-                        v-model="filters.academic_period_id"
-                        class="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700 transition focus:border-[#087ab1] focus:bg-white focus:ring-2 focus:ring-[#68c8fb]/20 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
-                    >
-                        <option value="">Periodo académico</option>
-                        <option
-                            v-for="p in academicPeriods"
-                            :key="p.id"
-                            :value="p.id"
-                        >
-                            {{ p.name }}
-                        </option>
-                    </select>
-
-                    <select
-                        v-model="filters.campus_id"
-                        class="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700 transition focus:border-[#087ab1] focus:bg-white focus:ring-2 focus:ring-[#68c8fb]/20 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
-                    >
-                        <option value="">Campus</option>
-                        <option v-for="c in campus" :key="c.id" :value="c.id">
-                            {{ c.name }}
-                        </option>
-                    </select>
-
-                    <select
-                        v-model="filters.status"
-                        class="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700 transition focus:border-[#087ab1] focus:bg-white focus:ring-2 focus:ring-[#68c8fb]/20 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
-                    >
-                        <option value="">Estado</option>
-                        <option value="draft">Borrador</option>
-                        <option value="active">Activo</option>
-                        <option value="processing">Procesando</option>
-                        <option value="completed">Completado</option>
-                        <option value="completed_with_errors">
-                            Completado con errores
-                        </option>
-                        <option value="failed">Fallido</option>
-                    </select>
-
-                    <button
-                        @click="applyFilters"
-                        class="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-linear-to-r from-[#087ab1] to-[#68c8fb] px-4 py-2 text-sm font-medium text-white shadow-md transition hover:from-[#066a98] hover:to-[#4fbdf5] active:scale-95"
-                    >
-                        <Filter class="h-3.5 w-3.5" />
-                        Filtrar
-                    </button>
-
-                    <button
-                        v-if="hasActiveFilters"
-                        @click="clearFilters"
-                        class="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-600 shadow-sm transition hover:border-red-200 hover:bg-red-50 hover:text-red-500 active:scale-95"
-                    >
-                        <Eraser class="h-3.5 w-3.5" />
-                        Limpiar
-                    </button>
+                <!-- ADVERTENCIA KPI -->
+                <div class="flex w-full shrink-0 flex-col gap-3 rounded-2xl border border-amber-200 bg-linear-to-br from-amber-50 to-white p-5 shadow-sm lg:w-72 dark:border-amber-700/50 dark:from-amber-950/30 dark:to-gray-900">
+                    <div class="flex items-center gap-2.5">
+                        <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-100 shadow-inner dark:bg-amber-900/40">
+                            <AlertTriangle class="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                        </div>
+                        <span class="text-xs font-semibold tracking-wide text-amber-700 uppercase dark:text-amber-400">Advertencia</span>
+                    </div>
+                    <p class="text-xs leading-relaxed text-amber-800 dark:text-amber-300">
+                        Cada lote de notificaciones admite un máximo de <strong>100 destinatarios</strong>. Si se supera este límite, el envío no será procesado.
+                    </p>
+                    <div class="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-100/60 px-3 py-2 dark:border-amber-700/40 dark:bg-amber-900/20">
+                        <LayoutList class="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+                        <span class="text-xs text-amber-700 dark:text-amber-300">Lotes dentro del límite:</span>
+                        <span class="ml-auto text-base font-bold text-amber-800 dark:text-amber-200">{{ props.kpiSmallBatches }}</span>
+                    </div>
                 </div>
+                <!-- fin ADVERTENCIA KPI -->
+
             </div>
+            <!-- fin FILTROS + ADVERTENCIA KPI -->
 
             <!-- TABLA -->
             <div
@@ -792,12 +905,37 @@ const resendNotification = async (detailId: number) => {
 
                                 <!-- Acciones -->
                                 <td class="px-5 py-3.5 text-right">
+
+                                    <!-- LÍMITE SUPERADO: reemplaza las acciones principales -->
                                     <div
-                                        class="flex items-center justify-end gap-1"
+                                        v-if="(item.details_count ?? 0) > 100"
+                                        class="flex items-center justify-end gap-2"
                                     >
-                                        <!-- ENLAZAR PLANTILLA — solo si el lote aún es editable -->
+                                        <div class="flex items-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-2.5 py-1.5 dark:border-red-800/40 dark:bg-red-900/20">
+                                            <AlertTriangle class="h-3.5 w-3.5 shrink-0 text-red-500 dark:text-red-400" />
+                                            <span class="text-xs font-medium leading-tight text-red-600 dark:text-red-400">
+                                                Límite superado<br>
+                                                <span class="font-normal">{{ item.details_count }} destinatarios</span>
+                                            </span>
+                                        </div>
                                         <button
                                             v-if="['draft', 'active'].includes(item.status)"
+                                            @click="deleteBatch(item)"
+                                            title="Eliminar lote"
+                                            class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-red-400 transition-all duration-200 hover:bg-red-500 hover:text-white"
+                                        >
+                                            <Trash2 class="h-3.5 w-3.5" />
+                                        </button>
+                                    </div>
+
+                                    <!-- ACCIONES NORMALES -->
+                                    <div
+                                        v-else
+                                        class="flex items-center justify-end gap-1"
+                                    >
+                                        <!-- ENLAZAR PLANTILLA — solo si el lote es editable y hay oficinas configuradas -->
+                                        <button
+                                            v-if="['draft', 'active'].includes(item.status) && props.offices.length > 0"
                                             @click="openAttachTemplate(item)"
                                             title="Enlazar plantilla"
                                             :class="[
@@ -813,9 +951,9 @@ const resendNotification = async (detailId: number) => {
                                             />
                                         </button>
 
-                                        <!-- ASIGNAR OFICINA — editable + plantilla enlazada -->
+                                        <!-- ASIGNAR OFICINA — editable + plantilla enlazada + hay oficinas disponibles -->
                                         <button
-                                            v-if="['draft', 'active'].includes(item.status) && item.notification_template_id"
+                                            v-if="['draft', 'active'].includes(item.status) && item.notification_template_id && props.offices.length > 0"
                                             @click="openOfficeModal(item)"
                                             title="Asignar oficina"
                                             :class="[
@@ -877,6 +1015,7 @@ const resendNotification = async (detailId: number) => {
                                             <Trash2 class="h-3.5 w-3.5" />
                                         </button>
                                     </div>
+
                                 </td>
                             </tr>
 

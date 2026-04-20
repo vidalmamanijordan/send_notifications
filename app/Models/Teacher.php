@@ -13,6 +13,7 @@ class Teacher extends Model
         'dni',
         'full_name',
         'email',
+        'phone',
         'is_active',
         'user_id',
     ];

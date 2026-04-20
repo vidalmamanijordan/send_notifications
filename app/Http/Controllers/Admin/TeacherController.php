@@ -138,6 +138,7 @@ class TeacherController extends Controller
             'dni' => ['required', 'string', 'max:20', 'unique:teachers,dni'],
             'full_name' => ['required', 'string', 'max:255'],
             'email' => ['nullable', 'email', 'max:255'],
+            'phone' => ['nullable', 'string', 'max:20'],
         ], [
             'dni.unique' => 'Ya existe un docente con ese DNI.',
         ]);
@@ -146,6 +147,7 @@ class TeacherController extends Controller
             'dni' => trim($request->dni),
             'full_name' => trim($request->full_name),
             'email' => $request->email ? trim($request->email) : null,
+            'phone' => $request->phone ? trim($request->phone) : null,
             'is_active' => true,
         ]);
 
@@ -159,6 +161,7 @@ class TeacherController extends Controller
         $validated = $request->validate([
             'full_name' => 'required|string|max:255',
             'email' => ['nullable', 'email', 'max:255'],
+            'phone' => ['nullable', 'string', 'max:20'],
             'is_active' => 'required|boolean',
         ]);
 
@@ -278,7 +281,7 @@ class TeacherController extends Controller
         $sheet = $spreadsheet->getActiveSheet();
         $sheet->setTitle('Docentes');
 
-        $headers = ['DNI', 'Nombre Completo', 'Email'];
+        $headers = ['DNI', 'Nombre Completo', 'Email', 'Celular'];
         foreach ($headers as $col => $header) {
             $cell = chr(65 + $col).'1';
             $sheet->setCellValue($cell, $header);
@@ -289,18 +292,20 @@ class TeacherController extends Controller
             'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '087AB1']],
             'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
         ];
-        $sheet->getStyle('A1:C1')->applyFromArray($headerStyle);
+        $sheet->getStyle('A1:D1')->applyFromArray($headerStyle);
         $sheet->getRowDimension(1)->setRowHeight(22);
 
         $sheet->getColumnDimension('A')->setWidth(14);
         $sheet->getColumnDimension('B')->setWidth(40);
         $sheet->getColumnDimension('C')->setWidth(36);
+        $sheet->getColumnDimension('D')->setWidth(18);
 
         $exampleStyle = ['font' => ['italic' => true, 'color' => ['rgb' => '888888']]];
         $sheet->setCellValue('A2', '12345678');
         $sheet->setCellValue('B2', 'Apellidos Nombres');
         $sheet->setCellValue('C2', 'correo@ejemplo.com');
-        $sheet->getStyle('A2:C2')->applyFromArray($exampleStyle);
+        $sheet->setCellValue('D2', '987654321');
+        $sheet->getStyle('A2:D2')->applyFromArray($exampleStyle);
 
         $writer = new Xlsx($spreadsheet);
 
@@ -353,6 +358,8 @@ class TeacherController extends Controller
             $fullName = isset($row[1]) ? trim((string) $row[1]) : null;
             $email = isset($row[2]) ? trim((string) $row[2]) : null;
             $email = $email ?: null;
+            $phone = isset($row[3]) ? trim((string) $row[3]) : null;
+            $phone = $phone ?: null;
 
             $teacher = Teacher::withTrashed()->where('dni', $dni)->first();
 
@@ -381,6 +388,7 @@ class TeacherController extends Controller
                 'dni' => $dni,
                 'full_name' => $fullName,
                 'email' => $email,
+                'phone' => $phone,
                 'is_active' => true,
             ]);
             $created++;

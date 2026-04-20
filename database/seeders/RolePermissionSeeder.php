@@ -24,6 +24,11 @@ class RolePermissionSeeder extends Seeder
             'users.delete',
             'users.assignRole',
 
+            // Contactos TI (página de ayuda)
+            'itContacts.create',
+            'itContacts.update',
+            'itContacts.delete',
+
             // Campus
             'campus.viewAny',
             'campus.create',
@@ -99,13 +104,9 @@ class RolePermissionSeeder extends Seeder
         $superadmin = Role::firstOrCreate(['name' => 'superadmin']);
         $superadmin->syncPermissions(Permission::all());
 
-        // 2. Admin — todo excepto gestión de usuarios y asignación de roles
+        // 2. Admin — todo excepto asignación de rol superadmin (controlado por backend)
         $admin = Role::firstOrCreate(['name' => 'admin']);
         $adminPermissions = Permission::whereNotIn('name', [
-            'users.viewAny',
-            'users.create',
-            'users.update',
-            'users.delete',
             'users.assignRole',
         ])->get();
         $admin->syncPermissions($adminPermissions);

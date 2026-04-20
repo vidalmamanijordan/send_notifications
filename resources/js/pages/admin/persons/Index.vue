@@ -220,8 +220,12 @@ const groupName = ref('');
 const groupSaving = ref(false);
 const editingGroupId = ref<number | null>(null);
 
+const GROUP_MAX = 100;
+const isGroupFull = computed(() => groupTeachers.value.length >= GROUP_MAX);
+
 const addToGroup = (teacher: TeacherResult) => {
     if (groupTeachers.value.some((t) => t.id === teacher.id)) return;
+    if (isGroupFull.value) return;
     groupTeachers.value.push(teacher);
     if (!groupName.value) {
         groupName.value = 'Grupo';
@@ -710,7 +714,7 @@ const deleteImport = (item: PersonImport) => {
                                 type="button"
                                 @click="addToGroup(t)"
                                 class="group flex w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-[#087ab1]/5 dark:hover:bg-[#087ab1]/10"
-                                :class="groupTeachers.some(g => g.id === t.id) ? 'opacity-40 pointer-events-none' : ''"
+                                :class="(groupTeachers.some(g => g.id === t.id) || isGroupFull) ? 'opacity-40 pointer-events-none' : ''"
                             >
                                 <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#087ab1]/10">
                                     <UserPlus class="h-3.5 w-3.5 text-[#087ab1]" />
@@ -855,8 +859,15 @@ const deleteImport = (item: PersonImport) => {
                                             Borrador
                                         </span>
                                     </div>
-                                    <p class="text-xs text-gray-500 dark:text-gray-400">
-                                        {{ groupTeachers.length }} docente{{ groupTeachers.length !== 1 ? 's' : '' }} seleccionado{{ groupTeachers.length !== 1 ? 's' : '' }}
+                                    <p class="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+                                        {{ groupTeachers.length }}/{{ GROUP_MAX }} docente{{ groupTeachers.length !== 1 ? 's' : '' }}
+                                        <span
+                                            v-if="isGroupFull"
+                                            class="inline-flex items-center gap-1 rounded-full bg-red-100 px-1.5 py-0 text-[10px] font-semibold text-red-600 dark:bg-red-900/30 dark:text-red-400"
+                                        >
+                                            <AlertTriangle class="h-2.5 w-2.5" />
+                                            Límite máximo
+                                        </span>
                                     </p>
                                 </div>
                                 <button
@@ -889,6 +900,17 @@ const deleteImport = (item: PersonImport) => {
                                     placeholder="Nombre del grupo…"
                                     class="flex-1 bg-transparent text-sm font-medium text-gray-700 placeholder-gray-400 focus:outline-none dark:text-gray-200"
                                 />
+                            </div>
+
+                            <!-- Aviso límite alcanzado -->
+                            <div
+                                v-if="isGroupFull"
+                                class="flex items-center gap-2.5 border-b border-red-100 bg-red-50 px-5 py-2.5 dark:border-red-900/30 dark:bg-red-900/15"
+                            >
+                                <AlertTriangle class="h-3.5 w-3.5 shrink-0 text-red-500" />
+                                <p class="text-xs font-medium text-red-700 dark:text-red-400">
+                                    Límite alcanzado — este grupo ya tiene <strong>{{ GROUP_MAX }} docentes</strong>, que es el máximo permitido por lote.
+                                </p>
                             </div>
 
                             <!-- Lista de docentes -->

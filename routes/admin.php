@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\CourseController;
 use App\Http\Controllers\Admin\ExcelUploadController;
 use App\Http\Controllers\Admin\ExpiredEvaluationController;
 use App\Http\Controllers\Admin\FacultyController;
+use App\Http\Controllers\Admin\ItContactController;
 use App\Http\Controllers\Admin\NotificationBatchController;
 use App\Http\Controllers\Admin\NotificationTemplateController;
 use App\Http\Controllers\Admin\OfficeController;
@@ -157,6 +158,21 @@ Route::middleware(['auth', 'verified'])
             Route::resource('notification-templates', NotificationTemplateController::class)
                 ->except(['create', 'edit']);
         });
+
+        // ┌─────────────────────────────────────────────────────────────────────┐
+        // │  CONTACTOS TI — gestión desde página de ayuda                       │
+        // └─────────────────────────────────────────────────────────────────────┘
+        Route::middleware('permission:itContacts.create')
+            ->post('it-contacts', [ItContactController::class, 'store'])
+            ->name('it-contacts.store');
+
+        Route::middleware('permission:itContacts.update')
+            ->put('it-contacts/{itContact}', [ItContactController::class, 'update'])
+            ->name('it-contacts.update');
+
+        Route::middleware('permission:itContacts.delete')
+            ->delete('it-contacts/{itContact}', [ItContactController::class, 'destroy'])
+            ->name('it-contacts.destroy');
 
         // Reportes
         Route::middleware('permission:notificationBatches.viewAny')

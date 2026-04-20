@@ -141,8 +141,8 @@ class ExcelUploadController extends Controller
             DB::commit();
 
             return redirect()
-                ->route('admin.excel-uploads.index')
-                ->with('success', 'Excel subido y procesado correctamente');
+                ->route('admin.notification-batches.index')
+                ->with('success', 'Excel subido y procesado correctamente. Aquí encontrarás el lote generado.');
         } catch (\Exception $e) {
 
             DB::rollBack();

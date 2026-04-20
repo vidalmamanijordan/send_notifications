@@ -4,9 +4,12 @@ namespace App\Services;
 
 use App\Models\Course;
 use App\Models\ExcelUpload;
+use App\Models\Faculty;
 use App\Models\ImportBatch;
 use App\Models\NotificationBatch;
+use App\Models\Program;
 use App\Models\Teacher;
+use App\Models\TeacherAssignment;
 use App\Models\TeacherEvaluationStatus;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -70,6 +73,11 @@ class ExcelProcessorService
             /*
             🔁 Procesar filas del Excel
             */
+
+            // Caché por nombre para evitar consultas repetidas por cada fila
+            $facultyCache = [];
+            $programCache = [];
+
             foreach ($dataRows as $row) {
 
                 $dni = $row[2] ?? null;
@@ -80,12 +88,48 @@ class ExcelProcessorService
                 }
 
                 $teacherName = $row[1] ?? 'Sin nombre';
+                $facultyName = isset($row[3]) ? trim((string) $row[3]) : null;
+                $programName = isset($row[4]) ? trim((string) $row[4]) : null;
                 $cycle = isset($row[5]) ? substr($row[5], 0, 10) : null;
                 $courseName = $row[6] ?? null;
                 $group = isset($row[7]) ? substr($row[7], 0, 10) : null;
                 $total = $row[8] ?? 0;
                 $evaluated = $row[9] ?? 0;
                 $expired = $row[10] ?? 0;
+
+                /*
+                🔹 Crear o buscar facultad
+                */
+                if ($facultyName && ! isset($facultyCache[$facultyName])) {
+                    $faculty = Faculty::withTrashed()->where('name', $facultyName)->first();
+
+                    if ($faculty) {
+                        if ($faculty->trashed()) {
+                            $faculty->restore();
+                        }
+                    } else {
+                        $faculty = Faculty::create(['name' => $facultyName]);
+                    }
+
+                    $facultyCache[$facultyName] = $faculty->id;
+                }
+
+                /*
+                🔹 Crear o buscar escuela profesional
+                */
+                if ($programName && ! isset($programCache[$programName])) {
+                    $program = Program::withTrashed()->where('name', $programName)->first();
+
+                    if ($program) {
+                        if ($program->trashed()) {
+                            $program->restore();
+                        }
+                    } else {
+                        $program = Program::create(['name' => $programName]);
+                    }
+
+                    $programCache[$programName] = $program->id;
+                }
 
                 /*
                 🔹 Crear o buscar docente (incluye soft-deleted para evitar
@@ -104,6 +148,36 @@ class ExcelProcessorService
                         'full_name' => trim($teacherName),
                         'is_active' => true,
                     ]);
+                }
+
+                /*
+                🔹 Vincular docente a facultad/programa/campus/periodo
+                */
+                $facultyId = $facultyName ? ($facultyCache[$facultyName] ?? null) : null;
+                $programId = $programName ? ($programCache[$programName] ?? null) : null;
+
+                if ($facultyId && $programId) {
+                    $assignment = TeacherAssignment::withTrashed()
+                        ->where('teacher_id', $teacher->id)
+                        ->where('campus_id', $upload->campus_id)
+                        ->where('faculty_id', $facultyId)
+                        ->where('program_id', $programId)
+                        ->where('academic_period_id', $upload->academic_period_id)
+                        ->first();
+
+                    if ($assignment) {
+                        if ($assignment->trashed()) {
+                            $assignment->restore();
+                        }
+                    } else {
+                        TeacherAssignment::create([
+                            'teacher_id' => $teacher->id,
+                            'campus_id' => $upload->campus_id,
+                            'faculty_id' => $facultyId,
+                            'program_id' => $programId,
+                            'academic_period_id' => $upload->academic_period_id,
+                        ]);
+                    }
                 }
 
                 /*

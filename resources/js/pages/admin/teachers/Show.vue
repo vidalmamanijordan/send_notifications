@@ -16,6 +16,7 @@ import {
     Edit3,
     Hash,
     KeyRound,
+    Phone,
     Link2Off,
     Lock,
     Mail,
@@ -64,6 +65,7 @@ interface Teacher {
     dni: string;
     full_name: string;
     email: string | null;
+    phone: string | null;
     is_active: boolean;
     user: LinkedUser | null;
     created_at: string;
@@ -123,12 +125,14 @@ const isEditing = ref(false);
 const form = useForm({
     full_name: props.teacher.full_name,
     email: props.teacher.email ?? '',
+    phone: props.teacher.phone ?? '',
     is_active: props.teacher.is_active,
 });
 
 function startEdit() {
     form.full_name = props.teacher.full_name;
     form.email = props.teacher.email ?? '';
+    form.phone = props.teacher.phone ?? '';
     form.is_active = props.teacher.is_active;
     isEditing.value = true;
 }
@@ -492,6 +496,30 @@ const hasEmail = computed(() => !!props.teacher.email);
                                             placeholder="correo@universidad.edu"
                                         />
                                         <p v-if="form.errors.email" class="mt-1 text-xs text-red-500">{{ form.errors.email }}</p>
+                                    </div>
+                                </div>
+
+                                <!-- Celular -->
+                                <div>
+                                    <label class="mb-1.5 block text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                                        Celular
+                                    </label>
+                                    <div v-if="!isEditing" class="flex items-center gap-2 rounded-lg border border-border/60 bg-muted/40 px-3 py-2.5">
+                                        <Phone class="h-4 w-4 shrink-0 text-muted-foreground" />
+                                        <span class="text-sm text-foreground">{{ teacher.phone ?? '—' }}</span>
+                                    </div>
+                                    <div v-else>
+                                        <input
+                                            v-model="form.phone"
+                                            type="text"
+                                            class="w-full rounded-lg border px-3 py-2.5 text-sm outline-none transition-all"
+                                            :class="form.errors.phone
+                                                ? 'border-red-400 bg-red-50 focus:ring-2 focus:ring-red-300 dark:bg-red-900/10'
+                                                : 'border-border bg-background focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-900'"
+                                            placeholder="Ej: 987654321"
+                                            maxlength="20"
+                                        />
+                                        <p v-if="form.errors.phone" class="mt-1 text-xs text-red-500">{{ form.errors.phone }}</p>
                                     </div>
                                 </div>
 
