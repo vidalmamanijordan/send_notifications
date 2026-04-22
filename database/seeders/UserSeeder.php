@@ -11,36 +11,14 @@ class UserSeeder extends Seeder
     public function run(): void
     {
         $superadmin = User::updateOrCreate(
-            ['email' => 'superadmin@example.com'],
+            ['email' => 'vidal_mamani@upeu.edu.pe'],
             [
-                'name' => 'Super Administrador',
-                'password' => Hash::make('admin123'),
+                'name' => 'Vidal Mamani Jordan',
+                'password' => Hash::make('SendNotif2026'),
                 'email_verified_at' => now(),
                 'remember_token' => \Illuminate\Support\Str::random(10),
             ]
         );
         $superadmin->syncRoles('superadmin');
-
-        $admin = User::updateOrCreate(
-            ['email' => 'admin@example.com'],
-            [
-                'name' => 'Administrador',
-                'password' => Hash::make('admin123'),
-                'email_verified_at' => now(),
-                'remember_token' => \Illuminate\Support\Str::random(10),
-            ]
-        );
-        $admin->syncRoles('admin');
-
-        $administrativo = User::updateOrCreate(
-            ['email' => 'administrativo@example.com'],
-            [
-                'name' => 'Personal Administrativo',
-                'password' => Hash::make('admin123'),
-                'email_verified_at' => now(),
-                'remember_token' => \Illuminate\Support\Str::random(10),
-            ]
-        );
-        $administrativo->syncRoles('administrativo');
     }
 }
