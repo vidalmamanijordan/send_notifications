@@ -1,16 +1,7 @@
 <script setup lang="ts">
 import AppLogoIcon from '@/components/AppLogoIcon.vue';
-import { dashboard, login, register } from '@/routes';
+import { dashboard, login } from '@/routes';
 import { Head, Link } from '@inertiajs/vue3';
-
-withDefaults(
-    defineProps<{
-        canRegister: boolean;
-    }>(),
-    {
-        canRegister: true,
-    },
-);
 </script>
 
 <template>
@@ -52,18 +43,10 @@ withDefaults(
                     <template v-else>
                         <Link
                             :href="login()"
-                            class="rounded-xl px-4 py-2 text-sm font-medium transition-all hover:bg-white/10"
-                            style="color: rgba(255,255,255,0.8);"
-                        >
-                            Iniciar sesión
-                        </Link>
-                        <Link
-                            v-if="canRegister"
-                            :href="register()"
                             class="rounded-xl px-4 py-2 text-sm font-semibold transition-all hover:opacity-90"
                             style="background: #68c8fb; color: #04395a;"
                         >
-                            Registrarse
+                            Iniciar sesión
                         </Link>
                     </template>
                 </nav>
@@ -135,14 +118,6 @@ withDefaults(
                             <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
                             </svg>
-                        </Link>
-                        <Link
-                            v-if="canRegister"
-                            :href="register()"
-                            class="rounded-2xl px-7 py-3.5 text-base font-semibold transition-all hover:bg-white/10"
-                            style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); color: rgba(255,255,255,0.9);"
-                        >
-                            Crear cuenta
                         </Link>
                     </template>
                 </div>
@@ -328,14 +303,6 @@ withDefaults(
                             style="background: #68c8fb; color: #04395a;"
                         >
                             Iniciar sesión
-                        </Link>
-                        <Link
-                            v-if="canRegister"
-                            :href="register()"
-                            class="rounded-2xl px-8 py-3.5 text-base font-semibold transition-all hover:bg-white/10"
-                            style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white;"
-                        >
-                            Crear cuenta
                         </Link>
                     </template>
                 </div>
