@@ -434,7 +434,7 @@ const inputErrorClass =
 
                                     <a
                                         v-if="contact.whatsapp"
-                                        :href="`https://wa.me/${contact.whatsapp}`"
+                                        :href="`https://wa.me/${contact.whatsapp?.replace(/\D/g, '')}`"
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         class="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"

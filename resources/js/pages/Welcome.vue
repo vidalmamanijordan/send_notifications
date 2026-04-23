@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import AppLogoIcon from '@/components/AppLogoIcon.vue';
 import { dashboard, login } from '@/routes';
 import { Head, Link } from '@inertiajs/vue3';
+import notifikaLogo from '../../images/siderbar/notifika_logo_oficial.svg';
 </script>
 
 <template>
@@ -20,12 +20,9 @@ import { Head, Link } from '@inertiajs/vue3';
             <div class="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
                 <!-- Logo -->
                 <div class="flex items-center gap-3">
-                    <div class="flex h-9 w-9 items-center justify-center rounded-xl"
-                         style="background: rgba(104,200,251,0.15); border: 1px solid rgba(104,200,251,0.3);">
-                        <AppLogoIcon class="size-5 fill-current" style="color: #68c8fb;" />
-                    </div>
+                    <img :src="notifikaLogo" alt="NotifiK" class="h-9 w-auto object-contain" />
                     <div>
-                        <p class="text-sm font-bold leading-none text-white">SisNotif</p>
+                        <p class="text-sm font-bold leading-none text-white">Notifi<span class="font-black text-yellow-400" style="font-size:1.1em;">K</span></p>
                         <p class="text-[10px] leading-none" style="color: rgba(255,255,255,0.4);">UPeU</p>
                     </div>
                 </div>
@@ -315,12 +312,9 @@ import { Head, Link } from '@inertiajs/vue3';
         <footer class="border-t border-gray-100 bg-white py-8 dark:border-gray-800 dark:bg-gray-950">
             <div class="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-6">
                 <div class="flex items-center gap-3">
-                    <div class="flex h-8 w-8 items-center justify-center rounded-lg"
-                         style="background: #04395a;">
-                        <AppLogoIcon class="size-4 fill-current" style="color: #68c8fb;" />
-                    </div>
+                    <img :src="notifikaLogo" alt="NotifiK" class="h-8 w-auto object-contain" />
                     <div>
-                        <p class="text-sm font-bold text-gray-900 dark:text-white">SisNotif</p>
+                        <p class="text-sm font-bold text-gray-900 dark:text-white">Notifi<span class="font-black text-yellow-400" style="font-size:1.1em;">K</span></p>
                         <p class="text-xs text-gray-400">Universidad Peruana Unión</p>
                     </div>
                 </div>

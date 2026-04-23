@@ -27,7 +27,6 @@ import {
 } from 'lucide-vue-next';
 import { computed, ref, watchEffect } from 'vue';
 import { route } from 'ziggy-js';
-import logoAdventista from '../../images/siderbar/logo_oficial_adventista_white.svg';
 
 const page = usePage<AppPageProps>();
 const { state } = useSidebar();
@@ -211,31 +210,7 @@ const handleLogout = () => {
 <template>
     <Sidebar collapsible="icon" variant="inset">
         <div class="relative flex min-h-0 flex-1 flex-col">
-            <!-- ══════════════════════════════════════════════════════
-             MARCA DE AGUA — Logo inclinado
-        ══════════════════════════════════════════════════════ -->
-            <div
-                class="pointer-events-none absolute inset-0 overflow-hidden"
-                style="z-index: 0"
-            >
-                <img
-                    :src="logoAdventista"
-                    alt=""
-                    aria-hidden="true"
-                    class="absolute select-none"
-                    style="
-                        width: 5000px;
-                        height: auto;
-                        left: 50%;
-                        top: 50%;
-                        transform: translate(-50%, -50%) rotate(-12deg);
-                        opacity: 0.09;
-                        filter: brightness(10);
-                    "
-                />
-            </div>
-
-            <!-- ══════════════════════════════════════════════════════
+<!-- ══════════════════════════════════════════════════════
              HEADER — Logo
         ══════════════════════════════════════════════════════ -->
             <SidebarHeader

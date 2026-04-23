@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import AppLogoIcon from '@/components/AppLogoIcon.vue';
+import notifikaLogo from '../../../images/siderbar/notifika_logo_oficial.svg';
 import { home } from '@/routes';
 import { Link } from '@inertiajs/vue3';
 
@@ -34,10 +34,11 @@ defineProps<{
 
                 <!-- Logo + nombre -->
                 <Link :href="home()" class="flex items-center gap-3">
-                    <div class="flex h-10 w-10 items-center justify-center rounded-xl" style="background: rgba(104,200,251,0.15); border: 1px solid rgba(104,200,251,0.3);">
-                        <AppLogoIcon class="size-6 fill-current text-[#68c8fb]" />
+                    <img :src="notifikaLogo" alt="NotifiK" class="h-10 w-auto object-contain" />
+                    <div>
+                        <p class="text-lg font-bold leading-none text-white">Notifi<span class="font-black text-yellow-400" style="font-size:1.1em;">K</span></p>
+                        <p class="text-xs leading-none" style="color: rgba(255,255,255,0.45);">Universidad Peruana Unión</p>
                     </div>
-                    <span class="text-lg font-semibold text-white">SisNotif</span>
                 </Link>
 
                 <!-- Titular central -->
@@ -144,10 +145,11 @@ defineProps<{
 
             <!-- Logo mobile (solo visible en móvil) -->
             <div class="mb-8 flex items-center gap-3 lg:hidden">
-                <div class="flex h-9 w-9 items-center justify-center rounded-xl" style="background: #04395a;">
-                    <AppLogoIcon class="size-5 fill-current text-[#68c8fb]" />
+                <img :src="notifikaLogo" alt="NotifiK" class="h-9 w-auto object-contain" />
+                <div>
+                    <p class="text-base font-bold leading-none text-gray-900 dark:text-white">Notifi<span class="font-black text-yellow-400" style="font-size:1.1em;">K</span></p>
+                    <p class="text-xs leading-none text-gray-400">Universidad Peruana Unión</p>
                 </div>
-                <span class="text-base font-semibold text-gray-900 dark:text-white">SisNotif</span>
             </div>
 
             <div class="w-full max-w-sm">
@@ -167,7 +169,7 @@ defineProps<{
 
             <!-- Footer -->
             <p class="mt-12 text-xs text-gray-400 dark:text-gray-600">
-                © {{ new Date().getFullYear() }} Universidad Peruana Unión · SisNotif
+                © {{ new Date().getFullYear() }} Universidad Peruana Unión · NotifiK
             </p>
         </div>
 
