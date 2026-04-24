@@ -29,6 +29,7 @@ import {
 } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
 import { route } from 'ziggy-js';
+import notifikaLogo from '../../../../images/siderbar/notifika_celeste.svg';
 
 /* ─────────────────────────────────────────
    TYPES
@@ -305,10 +306,11 @@ const hasEmail = computed(() => !!props.teacher.email);
                 ════════════════════════════════════════ -->
                 <div class="overflow-hidden rounded-2xl shadow-lg">
                     <!-- Gradient header -->
-                    <div class="relative bg-gradient-to-br from-indigo-600 via-indigo-700 to-violet-700 px-8 py-8">
+                    <div class="relative px-8 py-8" style="background: linear-gradient(135deg, #032f4a 0%, #04395a 50%, #065c8e 100%);">
                         <!-- Decorative circles -->
                         <div class="pointer-events-none absolute -right-12 -top-12 h-48 w-48 rounded-full bg-white/5" />
                         <div class="pointer-events-none absolute -bottom-8 right-32 h-32 w-32 rounded-full bg-white/5" />
+                        <div class="pointer-events-none absolute inset-0" style="background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(104,200,251,0.10), transparent);" />
 
                         <div class="relative flex flex-col items-start gap-6 sm:flex-row sm:items-center">
                             <!-- Avatar -->
@@ -336,13 +338,14 @@ const hasEmail = computed(() => !!props.teacher.email);
                                 </div>
 
                                 <div class="mt-2 flex flex-wrap items-center gap-4">
-                                    <span class="flex items-center gap-1.5 text-sm text-indigo-200">
+                                    <span class="flex items-center gap-1.5 text-sm" style="color: rgba(104,200,251,0.85);">
                                         <Hash class="h-3.5 w-3.5" />
                                         DNI: <strong class="text-white">{{ teacher.dni }}</strong>
                                     </span>
                                     <span
                                         class="flex items-center gap-1.5 text-sm"
-                                        :class="hasEmail ? 'text-indigo-200' : 'text-red-300'"
+                                        :class="hasEmail ? '' : 'text-red-300'"
+                                        :style="hasEmail ? 'color: rgba(104,200,251,0.85);' : ''"
                                     >
                                         <Mail class="h-3.5 w-3.5" />
                                         <span v-if="hasEmail" class="text-white">{{ teacher.email }}</span>
@@ -350,7 +353,7 @@ const hasEmail = computed(() => !!props.teacher.email);
                                     </span>
                                 </div>
 
-                                <p class="mt-1.5 text-xs text-indigo-300">
+                                <p class="mt-1.5 text-xs" style="color: rgba(104,200,251,0.6);">
                                     Registrado el {{ formatDate(teacher.created_at) }}
                                     · Actualizado {{ formatDate(teacher.updated_at) }}
                                 </p>
@@ -374,10 +377,10 @@ const hasEmail = computed(() => !!props.teacher.email);
                         <span class="text-xs text-muted-foreground">
                             Datos del periodo:
                         </span>
-                        <span class="inline-flex items-center gap-1.5 rounded-full bg-indigo-100 px-2.5 py-0.5 text-xs font-semibold text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300">
+                        <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold" style="background: rgba(104,200,251,0.12); color: #68c8fb; border: 1px solid rgba(104,200,251,0.25);">
                             <span class="relative flex h-1.5 w-1.5">
                                 <span v-if="currentPeriod?.status === 'active'" class="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-                                <span class="relative inline-flex h-1.5 w-1.5 rounded-full" :class="currentPeriod?.status === 'active' ? 'bg-emerald-500' : 'bg-indigo-400'" />
+                                <span class="relative inline-flex h-1.5 w-1.5 rounded-full" :class="currentPeriod?.status === 'active' ? 'bg-emerald-500' : 'bg-[#68c8fb]'" />
                             </span>
                             {{ currentPeriod?.name ?? 'Sin periodo' }}
                         </span>
@@ -736,9 +739,55 @@ const hasEmail = computed(() => !!props.teacher.email);
                         </div>
                     </div>
 
-                    <!-- ── EVALUATION TABLE ── -->
-                    <div class="lg:col-span-2">
-                        <div class="rounded-2xl border border-border bg-background shadow-sm">
+                    <!-- ── PANEL LOGO NOTIFIK ── -->
+                    <div class="rounded-2xl border border-border bg-background shadow-sm overflow-hidden">
+                        <div class="relative flex h-full flex-col items-center justify-center p-8 min-h-[340px]">
+
+                            <!-- Orbes de fondo -->
+                            <div class="pointer-events-none absolute inset-0 overflow-hidden rounded-2xl">
+                                <div class="logo-orb absolute -top-8 -left-8 h-40 w-40 rounded-full blur-3xl" style="background: rgba(104,200,251,0.08);" />
+                                <div class="logo-orb-reverse absolute -bottom-8 -right-8 h-40 w-40 rounded-full blur-3xl" style="background: rgba(6,92,142,0.12);" />
+                            </div>
+
+                            <!-- Logo con anillos -->
+                            <div class="relative flex items-center justify-center mb-6">
+                                <!-- Anillo exterior -->
+                                <div class="logo-ring-outer absolute h-36 w-36 rounded-full"
+                                    style="border: 1px solid transparent; border-top-color: rgba(104,200,251,0.5); border-right-color: rgba(104,200,251,0.12);" />
+                                <!-- Anillo interior -->
+                                <div class="logo-ring-inner absolute h-24 w-24 rounded-full"
+                                    style="border: 1px solid transparent; border-bottom-color: rgba(104,200,251,0.35); border-left-color: rgba(104,200,251,0.08);" />
+                                <!-- Logo flotante -->
+                                <div class="logo-float relative flex items-center justify-center h-16 w-16">
+                                    <img
+                                        :src="notifikaLogo"
+                                        alt="NotifiK"
+                                        class="h-full w-full object-contain"
+                                        style="filter: drop-shadow(0 0 16px rgba(104,200,251,0.45));"
+                                    />
+                                </div>
+                            </div>
+
+                            <!-- Nombre -->
+                            <div class="relative text-center">
+                                <h3 class="notifik-text text-2xl font-bold tracking-[0.18em] uppercase select-none">
+                                    NotifiK
+                                </h3>
+                                <p class="mt-1.5 text-xs tracking-widest uppercase text-muted-foreground/60 select-none">
+                                    Sistema de Notificaciones
+                                </p>
+                                <!-- Línea decorativa -->
+                                <div class="mx-auto mt-4 h-px w-16 rounded-full" style="background: linear-gradient(to right, transparent, rgba(104,200,251,0.5), transparent);" />
+                            </div>
+
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- ── EVALUATION TABLE — full width ── -->
+                <div>
+                    <div class="rounded-2xl border border-border bg-background shadow-sm">
                             <!-- Card header -->
                             <div class="flex items-center justify-between gap-3 border-b border-border px-6 py-4">
                                 <div class="flex items-center gap-3">
@@ -752,7 +801,7 @@ const hasEmail = computed(() => !!props.teacher.email);
                                         </p>
                                     </div>
                                 </div>
-                                <span v-if="currentPeriod" class="inline-flex items-center gap-1.5 rounded-full bg-indigo-100 px-2.5 py-1 text-xs font-medium text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300">
+                                <span v-if="currentPeriod" class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium" style="background: rgba(4,57,90,0.08); color: #04395a; border: 1px solid rgba(4,57,90,0.15);">
                                     <CalendarDays class="h-3 w-3" />
                                     {{ currentPeriod.name }}
                                 </span>
@@ -879,12 +928,11 @@ const hasEmail = computed(() => !!props.teacher.email);
                                         @click="paginate(link.url)"
                                         class="flex h-8 min-w-[32px] items-center justify-center rounded-lg px-2 text-xs font-medium transition-colors"
                                         :class="[
-                                            link.active
-                                                ? 'bg-indigo-600 text-white shadow-sm'
-                                                : link.url
-                                                    ? 'text-muted-foreground hover:bg-muted'
-                                                    : 'cursor-not-allowed text-muted-foreground/40',
+                                            link.url
+                                                ? 'text-muted-foreground hover:bg-muted'
+                                                : 'cursor-not-allowed text-muted-foreground/40',
                                         ]"
+                                        :style="link.active ? 'background:#04395a; color:#68c8fb;' : ''"
                                         v-html="link.label"
                                     />
                                 </div>
@@ -893,7 +941,6 @@ const hasEmail = computed(() => !!props.teacher.email);
                     </div>
                 </div>
             </div>
-        </div>
     </AppLayout>
 </template>
 
@@ -906,5 +953,55 @@ const hasEmail = computed(() => !!props.teacher.email);
 .flash-slide-leave-to {
     opacity: 0;
     transform: translateY(-12px) scale(0.97);
+}
+
+/* ── Logo NotifiK animations ── */
+@keyframes logo-float {
+    0%, 100% { transform: translateY(0px); }
+    50%       { transform: translateY(-12px); }
+}
+@keyframes ring-cw {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+}
+@keyframes ring-ccw {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(-360deg); }
+}
+@keyframes orb-move {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50%       { transform: translate(10px, -10px) scale(1.08); }
+}
+@keyframes orb-move-reverse {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50%       { transform: translate(-10px, 10px) scale(1.06); }
+}
+@keyframes notifik-shimmer {
+    0%   { background-position: -200% center; }
+    100% { background-position: 200% center; }
+}
+
+.logo-float {
+    animation: logo-float 3.5s ease-in-out infinite;
+}
+.logo-ring-outer {
+    animation: ring-cw 7s linear infinite;
+}
+.logo-ring-inner {
+    animation: ring-ccw 5s linear infinite;
+}
+.logo-orb {
+    animation: orb-move 8s ease-in-out infinite;
+}
+.logo-orb-reverse {
+    animation: orb-move-reverse 10s ease-in-out infinite;
+}
+.notifik-text {
+    background: linear-gradient(90deg, #68c8fb 0%, #ffffff 40%, #068ab8 60%, #68c8fb 100%);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: notifik-shimmer 4s linear infinite;
 }
 </style>

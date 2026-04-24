@@ -170,3 +170,71 @@
         @apply bg-background text-foreground;
     }
 }
+
+/* ── Sidebar scrollbar — estilo Windows 11 ─────────────────────────────── */
+
+/* Firefox */
+[data-sidebar="content"] {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+}
+
+/* Webkit — reposo: línea muy delgada, sin flechas */
+[data-sidebar="content"]::-webkit-scrollbar {
+    width: 2px;
+}
+[data-sidebar="content"]::-webkit-scrollbar-track {
+    background: transparent;
+}
+[data-sidebar="content"]::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+}
+[data-sidebar="content"]::-webkit-scrollbar-button {
+    height: 0;
+    background: transparent;
+}
+
+/* Webkit — hover (controlado por JS): gruesa + flechas */
+[data-sidebar="content"][data-scrollhover]::-webkit-scrollbar {
+    width: 7px;
+}
+[data-sidebar="content"][data-scrollhover]::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 10px;
+}
+[data-sidebar="content"][data-scrollhover]::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.32);
+    border-radius: 10px;
+}
+[data-sidebar="content"][data-scrollhover]::-webkit-scrollbar-thumb:hover {
+    background: rgba(104, 200, 251, 0.55);
+}
+
+/* Flecha arriba */
+[data-sidebar="content"][data-scrollhover]::-webkit-scrollbar-button:single-button:vertical:decrement {
+    height: 14px;
+    background-color: rgba(255, 255, 255, 0.06);
+    border-radius: 4px 4px 0 0;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 5'%3E%3Cpath d='M4 0L8 5H0Z' fill='%23ffffff70'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 6px 4px;
+}
+[data-sidebar="content"][data-scrollhover]::-webkit-scrollbar-button:single-button:vertical:decrement:hover {
+    background-color: rgba(104, 200, 251, 0.2);
+}
+
+/* Flecha abajo */
+[data-sidebar="content"][data-scrollhover]::-webkit-scrollbar-button:single-button:vertical:increment {
+    height: 14px;
+    background-color: rgba(255, 255, 255, 0.06);
+    border-radius: 0 0 4px 4px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 5'%3E%3Cpath d='M4 5L0 0H8Z' fill='%23ffffff70'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 6px 4px;
+}
+[data-sidebar="content"][data-scrollhover]::-webkit-scrollbar-button:single-button:vertical:increment:hover {
+    background-color: rgba(104, 200, 251, 0.2);
+}

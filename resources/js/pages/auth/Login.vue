@@ -14,6 +14,10 @@ defineProps<{
     canRegister: boolean;
     whatsappUrl?: string | null;
 }>();
+
+function markLogin(): void {
+    sessionStorage.setItem('just_logged_in', '1');
+}
 </script>
 
 <template>
@@ -96,6 +100,7 @@ defineProps<{
                     :tabindex="4"
                     :disabled="processing"
                     data-test="login-button"
+                    @click="markLogin"
                     class="relative mt-1 flex h-11 w-full items-center justify-center gap-2 overflow-hidden rounded-xl text-sm font-semibold tracking-wide shadow-md transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-70"
                     style="background: linear-gradient(135deg, #04395a 0%, #065c8e 100%); color: #68c8fb;"
                     onmouseover="this.style.filter='brightness(1.12)'"
