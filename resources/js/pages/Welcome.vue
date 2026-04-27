@@ -2,7 +2,8 @@
 import { dashboard, login } from '@/routes';
 import { Head, Link } from '@inertiajs/vue3';
 import notifikaLogo from '../../images/siderbar/notifika_logo_oficial.svg';
-import notifikaIcon from '../../images/siderbar/icon_notifik.png';
+import notifikaIcon from '../../images/welcome/notifik_circle.svg';
+import asuntosAcademicosLogo from '../../images/welcome/asuntos_academicos.svg';
 import { onBeforeUnmount, onMounted, ref } from 'vue';
 
 const slides = [
@@ -590,18 +591,38 @@ onBeforeUnmount(() => clearInterval(timer));
         <!-- ══════════════════════════════════════════════════════
              FOOTER
         ══════════════════════════════════════════════════════ -->
-        <footer class="border-t border-gray-100 bg-white py-8 dark:border-gray-800 dark:bg-gray-950">
-            <div class="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-6">
-                <div class="flex items-center gap-3">
-                    <img :src="notifikaLogo" alt="NotifiK" class="h-8 w-auto object-contain" />
-                    <div>
-                        <p class="text-sm font-bold text-gray-900 dark:text-white">Notifi<span class="font-black text-yellow-400" style="font-size:1.1em;">K</span></p>
-                        <p class="text-xs text-gray-400">Universidad Peruana Unión</p>
+        <footer class="border-t border-gray-100 bg-white dark:border-gray-800 dark:bg-gray-950">
+            <!-- Top footer row -->
+            <div class="mx-auto max-w-7xl px-6 py-6">
+                <div class="flex flex-wrap items-center justify-between gap-6">
+                    <!-- Brand -->
+                    <div class="flex items-center gap-3">
+                        <img :src="notifikaLogo" alt="NotifiK" class="h-9 w-auto object-contain" />
+                        <div>
+                            <p class="text-sm font-bold text-gray-900 dark:text-white">
+                                Notifi<span class="font-black text-yellow-400" style="font-size:1.1em;">K</span>
+                            </p>
+                            <p class="text-xs text-gray-400 dark:text-gray-500">Universidad Peruana Unión</p>
+                        </div>
+                    </div>
+
+                    <!-- Developed by -->
+                    <div class="flex flex-col items-end gap-2">
+                        <div class="flex items-center gap-2">
+                            <span class="text-[11px] font-medium text-gray-400 dark:text-gray-500">Powered by</span>
+                            <img :src="asuntosAcademicosLogo" alt="Asuntos Académicos" class="h-8 w-auto object-contain" />
+                        </div>
                     </div>
                 </div>
-                <p class="text-xs text-gray-400">
-                    © {{ new Date().getFullYear() }} Universidad Peruana Unión · Sistema de Notificaciones Docentes
-                </p>
+            </div>
+
+            <!-- Bottom copyright bar -->
+            <div class="border-t border-gray-100 bg-gray-50 dark:border-gray-800 dark:bg-gray-900/50">
+                <div class="mx-auto max-w-7xl px-6 py-3">
+                    <p class="text-center text-xs text-gray-400 dark:text-gray-600">
+                        © {{ new Date().getFullYear() }} Universidad Peruana Unión · Sistema de Notificaciones Docentes
+                    </p>
+                </div>
             </div>
         </footer>
     </div>

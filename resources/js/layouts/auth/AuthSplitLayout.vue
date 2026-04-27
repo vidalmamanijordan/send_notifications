@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import AppLogoIcon from '@/components/AppLogoIcon.vue';
+import notifikCircle from '../../../images/welcome/notifik_circle.svg';
 import { home } from '@/routes';
 import { Link, usePage } from '@inertiajs/vue3';
 
@@ -25,7 +25,7 @@ defineProps<{
                 :href="home()"
                 class="relative z-20 flex items-center text-lg font-medium"
             >
-                <AppLogoIcon class="mr-2 size-8 fill-current text-white" />
+                <img :src="notifikCircle" alt="NotifiK" class="mr-2 h-8 w-auto object-contain" />
                 {{ name }}
             </Link>
             <div v-if="quote" class="relative z-20 mt-auto">
