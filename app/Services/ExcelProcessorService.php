@@ -80,14 +80,14 @@ class ExcelProcessorService
 
             foreach ($dataRows as $row) {
 
-                $dni = $row[2] ?? null;
+                $dni = $row[1] ?? null;
                 if (! $dni) {
                     $failedRows++;
 
                     continue;
                 }
 
-                $teacherName = $row[1] ?? 'Sin nombre';
+                $teacherName = $row[2] ?? 'Sin nombre';
                 $facultyName = isset($row[3]) ? trim((string) $row[3]) : null;
                 $programName = isset($row[4]) ? trim((string) $row[4]) : null;
                 $cycle = isset($row[5]) ? substr($row[5], 0, 10) : null;

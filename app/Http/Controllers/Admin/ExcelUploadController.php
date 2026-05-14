@@ -62,8 +62,8 @@ class ExcelUploadController extends Controller
         // Columnas en el orden exacto que espera ExcelProcessorService (índices 0-10)
         $headers = [
             'A' => 'N°',
-            'B' => 'Docente',
-            'C' => 'DNI',
+            'B' => 'DNI',
+            'C' => 'Docente',
             'D' => 'Facultad',
             'E' => 'E.P.',
             'F' => 'Ciclo',
@@ -86,13 +86,13 @@ class ExcelUploadController extends Controller
         $sheet->getStyle('A1:K1')->applyFromArray($headerStyle);
         $sheet->getRowDimension(1)->setRowHeight(22);
 
-        $widths = ['A' => 6, 'B' => 36, 'C' => 12, 'D' => 24, 'E' => 24, 'F' => 10, 'G' => 36, 'H' => 10, 'I' => 20, 'J' => 14, 'K' => 14];
+        $widths = ['A' => 6, 'B' => 12, 'C' => 36, 'D' => 24, 'E' => 24, 'F' => 10, 'G' => 36, 'H' => 10, 'I' => 20, 'J' => 14, 'K' => 14];
         foreach ($widths as $col => $width) {
             $sheet->getColumnDimension($col)->setWidth($width);
         }
 
         $exampleStyle = ['font' => ['italic' => true, 'color' => ['rgb' => '888888']]];
-        $example = ['1', 'APELLIDOS NOMBRES', '12345678', 'Facultad de Ingeniería', 'Ing. de Sistemas', '2025-I', 'Cálculo I', 'A', '5', '3', '2'];
+        $example = ['1', '12345678', 'APELLIDOS NOMBRES', 'Facultad de Ingeniería', 'Ing. de Sistemas', '2025-I', 'Cálculo I', 'A', '5', '3', '2'];
 
         foreach (array_keys($headers) as $i => $col) {
             $sheet->setCellValue("{$col}2", $example[$i]);
@@ -114,7 +114,7 @@ class ExcelUploadController extends Controller
         $validated = $request->validate([
             'academic_period_id' => 'required|exists:academic_periods,id',
             'campus_id' => 'required|exists:campus,id',
-            'file' => 'required|file|mimes:xlsx,xls',
+            'file' => 'required|file|extensions:xlsx,xls',
         ]);
 
         DB::beginTransaction();

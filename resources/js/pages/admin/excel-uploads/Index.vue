@@ -236,6 +236,7 @@ const deleteUpload = (upload: Upload) => {
             <div
                 class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-900"
             >
+                <div class="overflow-x-auto">
                 <table
                     class="min-w-full divide-y divide-gray-100 dark:divide-gray-700"
                 >
@@ -455,7 +456,7 @@ const deleteUpload = (upload: Upload) => {
                                 <button
                                     @click="deleteUpload(item)"
                                     title="Eliminar carga"
-                                    class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full transition-all duration-200"
+                                    class="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-full transition-all duration-200"
                                     :class="
                                         activeDelete === item.id
                                             ? 'bg-red-600 text-white shadow-md'
@@ -467,8 +468,14 @@ const deleteUpload = (upload: Upload) => {
                             </td>
                         </tr>
 
-                        <!-- Sin datos -->
-                        <tr v-if="uploads.data.length === 0">
+                    </tbody>
+                </table>
+                </div>
+
+                <!-- Sin datos (fuera de la tabla para evitar scroll innecesario) -->
+                <table v-if="uploads.data.length === 0" class="w-full">
+                    <tbody>
+                        <tr>
                             <td colspan="10" class="px-6 py-16 text-center">
                                 <div class="flex flex-col items-center gap-3">
                                     <div
