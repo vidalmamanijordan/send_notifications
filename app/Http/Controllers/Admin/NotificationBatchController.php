@@ -184,9 +184,13 @@ class NotificationBatchController extends Controller
                 $courses = TeacherEvaluationStatus::where('teacher_id', $firstTeacher['id'])
                     ->where('import_batch_id', $notificationBatch->import_batch_id)
                     ->where('expired_components', '>', 0)
-                    ->with(['course', 'campus'])
+                    ->with(['course', 'campus', 'program'])
                     ->get()
-                    ->map(fn ($c) => "- {$c->course?->name} (Ciclo: {$c->cycle}, Grupo: {$c->group}) - {$c->campus?->name}");
+                    ->map(function ($c) {
+                        $program = $c->program?->name ? " | {$c->program->name}" : '';
+
+                        return "- {$c->course?->name}{$program} (Ciclo: {$c->cycle}, Grupo: {$c->group}) - {$c->campus?->name}";
+                    });
             }
 
             $courses = $courses->implode("\n");

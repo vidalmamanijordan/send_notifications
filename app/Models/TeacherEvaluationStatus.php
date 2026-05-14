@@ -16,6 +16,7 @@ class TeacherEvaluationStatus extends Model
         'excel_upload_id',
         'teacher_id',
         'course_id',
+        'program_id',
         'academic_period_id',
         'campus_id',
         'cycle',
@@ -48,6 +49,11 @@ class TeacherEvaluationStatus extends Model
     public function course()
     {
         return $this->belongsTo(Course::class);
+    }
+
+    public function program()
+    {
+        return $this->belongsTo(Program::class);
     }
 
     public function scopeWithExpired($query)

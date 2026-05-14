@@ -206,6 +206,7 @@ class ExcelProcessorService
                     'excel_upload_id' => $upload->id,
                     'teacher_id' => $teacher->id,
                     'course_id' => $course ? $course->id : null,
+                    'program_id' => $programId ?? null,
                     'academic_period_id' => $upload->academic_period_id,
                     'campus_id' => $upload->campus_id,
                     'cycle' => $cycle,
